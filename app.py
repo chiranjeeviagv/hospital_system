@@ -199,7 +199,8 @@ init_db()
 # 3. PDF GENERATION UTILITIES
 # ==========================================
 
-def build_prescription_pdf(name, disease, symptoms, Rx, notes):
+# Change the function arguments to include "doctor"
+def build_prescription_pdf(name, doctor, disease, symptoms, Rx, notes):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
     styles = getSampleStyleSheet()
@@ -215,6 +216,8 @@ def build_prescription_pdf(name, disease, symptoms, Rx, notes):
     story.append(Paragraph("E-Health Portal Automated Prescription Record System", sub_style))
     story.append(Paragraph(f"<b>Date:</b> {datetime.now().strftime('%Y-%m-%d %H:%M')}", meta_style))
     story.append(Paragraph(f"<b>Patient Name:</b> {name}", meta_style))
+    # --- ADD THIS LINE TO DISPLAY THE DOCTOR ---
+    story.append(Paragraph(f"<b>Attending Doctor:</b> {doctor}", meta_style)) 
     story.append(Spacer(1, 10))
     
     story.append(Paragraph("Clinical Diagnostics Summary", section_title))
@@ -230,7 +233,7 @@ def build_prescription_pdf(name, disease, symptoms, Rx, notes):
     story.append(Paragraph(notes if notes else "No additional restrictions specified.", body_style))
     story.append(Spacer(1, 40))
     
-    story.append(Paragraph("Authorized Signature (Digitally Validated Record)", ParagraphStyle('Sign', parent=styles['Normal'], alignment=TA_LEFT, fontSize=9)))
+    story.append(Paragraph(f"Authorized Signature: <b>{doctor}</b> (Digitally Validated)", ParagraphStyle('Sign', parent=styles['Normal'], alignment=TA_LEFT, fontSize=9)))
     
     doc.build(story)
     buffer.seek(0)
@@ -482,14 +485,10 @@ else:
                 conn.commit()
                 conn.close()
 
-                st.session_state["pdf_ready_patient"] = selected_patient
-                st.session_state["pdf_data"] = (selected_patient, chosen_disease, chosen_symptom, final_prescription, clinical_notes)
-                st.toast("Case logged into medical database charts!")
-                st.rerun()
-
+                # Inside the Doctor Dashboard case logging blocks:
             if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
-                p_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_data"]
-                pdf_bytes = build_prescription_pdf(p_name, p_dis, p_sym, p_rx, p_note)
+                p_name, d_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_data"]
+                pdf_bytes = build_prescription_pdf(p_name, d_name, p_dis, p_sym, p_rx, p_note)
                 st.markdown("---")
                 st.success("📄 Medical Prescription Document Compiled Successfully!")
                 st.download_button(
@@ -504,13 +503,12 @@ else:
     # --- PAGE 3: PHARMACY INVENTORY ---
     elif user_role == "Pharmacy Inventory":
         st.title("📦 Medical Dispensary & Pharmacy Stock Management")
-        
         conn = sqlite3.connect("hospital_v2.db")
         df_inv = pd.read_sql_query("SELECT id AS ID, medicine_name AS [Medicine Name], category AS [Therapeutic Class], stock_qty AS [Current Stock Units], min_required AS [Safety Threshold Limit] FROM inventory", conn)
         conn.close()
-        
+
         low_stock_items = df_inv[df_inv["Current Stock Units"] <= df_inv["Safety Threshold Limit"]]
-        
+
         col_stat1, col_stat2 = st.columns(2)
         col_stat1.metric("Total Maintained Formulas", len(df_inv))
         col_stat2.metric("Critical Low Reorder Alerts", len(low_stock_items), delta=-len(low_stock_items) if len(low_stock_items) > 0 else 0, delta_color="inverse")
@@ -518,12 +516,11 @@ else:
         if not low_stock_items.empty:
             st.error("⚠️ Critical Shortage Warning: The following formulas have fallen below safety limits!")
             st.dataframe(low_stock_items, use_container_width=True, hide_index=True)
-            
+
         st.markdown("---")
         st.subheader("Live Inventory Editor")
-        
         edited_inv = st.data_editor(df_inv, disabled=["ID", "Medicine Name", "Therapeutic Class"], use_container_width=True, hide_index=True, key="inventory_editor")
-        
+
         if st.button("💾 Apply & Update Inventory Balances", type="primary"):
             conn = sqlite3.connect("hospital_v2.db")
             cursor = conn.cursor()
@@ -613,7 +610,6 @@ else:
                 st.caption("No invoices issued yet today.")
 
     # --- PAGE 5: ADMIN ANALYTICS ---
-                # --- PAGE 5: ADMIN ANALYTICS (STYLED) ---
     elif user_role == "Admin Analytics":
         st.title("📊 Hospital Operational Control Panel")
         conn = sqlite3.connect("hospital_v2.db")
@@ -632,18 +628,16 @@ else:
             chart_data = df_cons["diagnosed_disease"].value_counts().reset_index()
             chart_data.columns = ["Disease Variant", "Total Incidences"]
             
-            # Custom styled dashboard chart template tracking
             fig = px.bar(
                 chart_data, 
                 x="Disease Variant", 
                 y="Total Incidences", 
                 color="Total Incidences",
-                color_continuous_scale="Viridis", # Smooth teal-to-yellow clinical chart style
+                color_continuous_scale="Viridis",
                 title="Epidemiological Workload Distribution Map", 
                 text_auto=True
             )
             
-            # Apply corporate canvas adjustments layout parameters
             fig.update_layout(
                 template="plotly_white",
                 xaxis_title="Diagnosed Disease Pathway",
@@ -652,27 +646,6 @@ else:
                 showlegend=False
             )
             
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No disease data logged out via the Doctor Workspace yet.")
-
-        st.title("📊 Hospital Operational Control Panel")
-        conn = sqlite3.connect("hospital_v2.db")
-        df_app = pd.read_sql_query("SELECT * FROM appointments", conn)
-        df_cons = pd.read_sql_query("SELECT * FROM consultations", conn)
-        conn.close()
-        
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Patient Bookings", len(df_app))
-        col2.metric("Awaiting Approval", len(df_app[df_app["status"] == "Pending"]))
-        col3.metric("Completed Treatments", len(df_app[df_app["status"] == "Completed"]))
-        st.markdown("---")
-        
-        if not df_cons.empty:
-            st.subheader("📈 Case Allocation by Diagnosed Conditions")
-            chart_data = df_cons["diagnosed_disease"].value_counts().reset_index()
-            chart_data.columns = ["Disease Variant", "Total Incidences"]
-            fig = px.bar(chart_data, x="Disease Variant", y="Total Incidences", color="Disease Variant", title="Epidemiological Workload Distribution Map", text_auto=True)
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No disease data logged out via the Doctor Workspace yet.")
