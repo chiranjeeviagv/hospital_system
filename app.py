@@ -343,7 +343,7 @@ else:
                 if patient_name.strip() == "":
                     st.error("Please enter a valid patient name.")
                 else:
-                    conn = sqlite3.connect("hospital_v2.db"
+                    conn = sqlite3.connect("hospital_v2.db")
                     cursor = conn.cursor()
                     cursor.execute(
                         "INSERT INTO appointments (patient_name, patient_age, patient_gender, patient_contact, patient_problem, doctor, appt_date, appt_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
