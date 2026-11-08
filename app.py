@@ -10,11 +10,11 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 def init_db():
-    """Initializes the database structure and updates old tables if necessary."""
+    """Initializes the database structure and safely syncs new specialty medicines."""
     conn = sqlite3.connect("hospital.db")
     cursor = conn.cursor()
     
-    # 1. Create the core appointments table structure
+    # 1. Appointments Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,16 +26,14 @@ def init_db():
         )
     ''')
     
-    # --- AUTOMATIC MIGRATION: Add columns if they are missing from old runs ---
     cursor.execute("PRAGMA table_info(appointments)")
     columns = [info[1] for info in cursor.fetchall()]
-    
     if "appt_date" not in columns:
         cursor.execute("ALTER TABLE appointments ADD COLUMN appt_date TEXT NOT NULL DEFAULT ''")
     if "appt_time" not in columns:
         cursor.execute("ALTER TABLE appointments ADD COLUMN appt_time TEXT NOT NULL DEFAULT ''")
     
-    # 2. Diagnostics, Disease, and Prescription History Table
+    # 2. Consultations Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS consultations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,12 +46,12 @@ def init_db():
         )
     ''')
     
-    # Seed data if table is completely empty
     cursor.execute("SELECT COUNT(*) FROM appointments")
     if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT INTO appointments (patient_name, doctor, appt_date, appt_time, status) VALUES ('Rahul Sharma', 'Dr. Verma (Cardiology)', '2026-11-08', '10:00 AM', 'Confirmed')")
         cursor.execute("INSERT INTO appointments (patient_name, doctor, appt_date, appt_time, status) VALUES ('Priya Patel', 'Dr. Reddy (Pediatrics)', '2026-11-08', '02:30 PM', 'Pending')")
-        # NEW: Pharmacy Stock Inventory Table
+
+    # 3. Pharmacy Stock Inventory Table (INSERT OR IGNORE safely updates live DBs)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS inventory (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,41 +62,73 @@ def init_db():
         )
     ''')
     
-    cursor.execute("SELECT COUNT(*) FROM inventory")
-    if cursor.fetchone()[0] == 0:
-        medicines = [
-            ('Paracetamol 650mg', 'Analgesic / Antipyretic', 120, 30),
-            ('Artemether-Lumefantrine', 'Antimalarial', 15, 10),
-            ('Dextromethorphan Syr.', 'Antitussive Cough Syrup', 45, 15),
-            ('Budesonide Inhaler', 'Bronchodilator', 8, 10),
-            ('Telmisartan 40mg', 'Antihypertensive', 200, 50),
-            ('Nitroglycerin 0.5mg', 'Antianginal Vasodilator', 25, 20),
-            ('Pantoprazole 40mg', 'Antacid / PPI', 350, 100),
-            ('Rabeprazole Combo', 'Antacid / GERD Support', 180, 40),
-            ('Naproxen 500mg', 'NSAID / Anti-inflammatory', 90, 30),
-            ('Febuxostat 40mg', 'Uric Acid Lowering Therapy', 60, 20)
-        ]
-        cursor.executemany("INSERT INTO inventory (medicine_name, category, stock_qty, min_required) VALUES (?, ?, ?, ?)", medicines)
+    medicines = [
+        ('Paracetamol 650mg', 'Analgesic / Antipyretic', 120, 30),
+        ('Artemether-Lumefantrine', 'Antimalarial', 15, 10),
+        ('Dextromethorphan Syr.', 'Antitussive Cough Syrup', 45, 15),
+        ('Budesonide Inhaler', 'Bronchodilator', 8, 10),
+        ('Telmisartan 40mg', 'Antihypertensive', 200, 50),
+        ('Nitroglycerin 0.5mg', 'Antianginal Vasodilator', 25, 20),
+        ('Pantoprazole 40mg', 'Antacid / PPI', 350, 100),
+        ('Rabeprazole Combo', 'Antacid / GERD Support', 180, 40),
+        ('Naproxen 500mg', 'NSAID / Anti-inflammatory', 90, 30),
+        ('Febuxostat 40mg', 'Uric Acid Lowering Therapy', 60, 20),
+        ('Sumatriptan 50mg', 'Antimigraine / Triptan', 75, 20),
+        ('Levetiracetam 500mg', 'Anticonvulsant', 110, 30),
+        ('Pregabalin 75mg', 'Neuropathic Pain Agent', 95, 25),
+        ('Moxifloxacin Eye Drops', 'Ophthalmic Antibiotic', 40, 15),
+        ('Carboxymethylcellulose Drops', 'Ocular Lubricant', 65, 20),
+        ('Timolol 0.5% Eye Drops', 'Antiglaucoma Agent', 30, 10),
+        ('Sertraline 50mg', 'SSRI Antidepressant', 140, 40),
+        ('Escitalopram 10mg', 'SSRI Anxiolytic', 160, 40),
+        ('Melatonin 3mg', 'Sleep Regulator', 85, 25)
+    ]
+    cursor.executemany(
+        "INSERT OR IGNORE INTO inventory (medicine_name, category, stock_qty, min_required) VALUES (?, ?, ?, ?)",
+        medicines
+    )
     
     conn.commit()
     conn.close()
+
 init_db()
 
 # --- 2. ENGINE MAPS ---
+SPECIALTY_DOCTORS = [
+    "Dr. Sharma (General Medicine)",
+    "Dr. Verma (Cardiology)",
+    "Dr. Reddy (Pediatrics)",
+    "Dr. Sen (Neurology)",
+    "Dr. Nair (Ophthalmology)",
+    "Dr. Rao (Psychiatry)"
+]
+
 SYMPTOM_VARIANTS = [
     "High Fever & Chills",
     "Chronic Cough & Shortness of Breath",
-    "Chest Pain & Palpitations",
     "Severe Abdominal Pain & Acid Reflux",
-    "Acute Joint Pain & Swelling"
+    "Acute Joint Pain & Swelling",
+    "Chest Pain & Palpitations",
+    "Severe Throbbing Headache & Aura",
+    "Sudden Dizziness, Numbness & Seizure Episodes",
+    "Blurred Vision, Eye Redness & Irritation",
+    "Gradual Vision Loss & Eye Pressure",
+    "Persistent Low Mood, Fatigue & Loss of Interest",
+    "Excessive Worry, Panic Attacks & Insomnia"
 ]
 
 DISEASE_ENGINE = {
     "High Fever & Chills": ["Viral Influenza", "Malaria Parasitism"],
     "Chronic Cough & Shortness of Breath": ["Acute Bronchitis", "Bronchial Asthma"],
-    "Chest Pain & Palpitations": ["Essential Hypertension", "Angina Pectoris"],
     "Severe Abdominal Pain & Acid Reflux": ["Acute Gastritis", "Gastroesophageal Reflux Disease (GERD)"],
-    "Acute Joint Pain & Swelling": ["Rheumatoid Arthritis", "Acute Gouty Arthritis"]
+    "Acute Joint Pain & Swelling": ["Rheumatoid Arthritis", "Acute Gouty Arthritis"],
+    "Chest Pain & Palpitations": ["Essential Hypertension", "Angina Pectoris"],
+    "Severe Throbbing Headache & Aura": ["Chronic Migraine", "Tension Headache"],
+    "Sudden Dizziness, Numbness & Seizure Episodes": ["Focal Epilepsy", "Peripheral Neuropathy"],
+    "Blurred Vision, Eye Redness & Irritation": ["Bacterial Conjunctivitis", "Dry Eye Syndrome"],
+    "Gradual Vision Loss & Eye Pressure": ["Open-Angle Glaucoma", "Age-Related Cataract"],
+    "Persistent Low Mood, Fatigue & Loss of Interest": ["Major Depressive Disorder", "Persistent Depressive Disorder"],
+    "Excessive Worry, Panic Attacks & Insomnia": ["Generalized Anxiety Disorder (GAD)", "Primary Insomnia"]
 }
 
 PRESCRIPTION_SUGGESTIONS = {
@@ -111,7 +141,19 @@ PRESCRIPTION_SUGGESTIONS = {
     "Acute Gastritis": "Antacid control: Cap. Pantoprazole 40mg OD before breakfast for 7 days.",
     "Gastroesophageal Reflux Disease (GERD)": "H2 Blocker combo: Cap. Rabeprazole 20mg + Domperidone 30mg SR before meals.",
     "Rheumatoid Arthritis": "NSAID Management: Tab. Naproxen 500mg BD after meals, Tab. Leflunomide 20mg.",
-    "Acute Gouty Arthritis": "Uric Acid Lowering: Tab. Febuxostat 40mg OD, Tab. Colchicine 0.5mg SOS for pain."
+    "Acute Gouty Arthritis": "Uric Acid Lowering: Tab. Febuxostat 40mg OD, Tab. Colchicine 0.5mg SOS for pain.",
+    "Chronic Migraine": "Acute relief: Tab. Sumatriptan 50mg SOS at onset; Prophylaxis: Tab. Propranolol 40mg OD.",
+    "Tension Headache": "Analgesic: Tab. Paracetamol 650mg + Caffeine combination SOS, stress & posture therapy.",
+    "Focal Epilepsy": "Anticonvulsant: Tab. Levetiracetam 500mg BD, avoid sleep deprivation and driving.",
+    "Peripheral Neuropathy": "Neuro-support: Cap. Pregabalin 75mg + Methylcobalamin 1500mcg OD at bedtime.",
+    "Bacterial Conjunctivitis": "Topical Antibiotic: Moxifloxacin 0.5% Eye Drops, 1 drop QID for 5 days.",
+    "Dry Eye Syndrome": "Ocular Lubricant: Carboxymethylcellulose 0.5% Eye Drops, 1-2 drops QID.",
+    "Open-Angle Glaucoma": "IOP Lowering: Timolol Maleate 0.5% Eye Drops, 1 drop BD in affected eye(s).",
+    "Age-Related Cataract": "Pre-op prep & anti-glare glasses; schedule phacoemulsification surgery evaluation.",
+    "Major Depressive Disorder": "SSRI Therapy: Tab. Sertraline 50mg OD after breakfast + Cognitive Behavioral Therapy (CBT).",
+    "Persistent Depressive Disorder": "SSRI Maintenance: Tab. Escitalopram 10mg OD mornings + weekly psychotherapy.",
+    "Generalized Anxiety Disorder (GAD)": "Anxiolytic / SSRI: Tab. Escitalopram 10mg OD + breathing & mindfulness exercises.",
+    "Primary Insomnia": "Sleep Hygiene protocol + Tab. Melatonin 3mg 30 mins before bedtime for 14 days."
 }
 
 # --- 3. PDF GENERATION UTILITY ---
@@ -160,56 +202,18 @@ def build_prescription_pdf(name, disease, symptoms, Rx, notes):
     buffer.seek(0)
     return buffer.getvalue()
 
-# --- 4. APP INTERFACE LAYOUT ---
+# --- 4. SECURE SIDEBAR NAVIGATION ENGINE ---
 st.set_page_config(page_title="Lifeline HMS Pro", page_icon="🏥", layout="wide")
 
-# --- 4. SECURE SIDEBAR NAVIGATION ENGINE ---
-# --- 4. SECURE SIDEBAR NAVIGATION ENGINE ---
 st.sidebar.title("🏥 Lifeline HMS Pro")
 st.sidebar.markdown("---")
 
-user_role = st.sidebar.selectbox(
-    "Switch User View:", 
-    ["Patient Portal", "Doctor Dashboard", "Pharmacy Inventory", "Admin Analytics"]
-)
-
-# Core Fix: Default to False for secure screens so they lock automatically
-if user_role in ["Doctor Dashboard", "Pharmacy Inventory", "Admin Analytics"]:
-    authenticated = False
-    st.sidebar.markdown(f"#### 🔐 Secure {user_role} Login")
-    password_input = st.sidebar.text_input("Enter Access Password:", type="password", key=f"pwd_{user_role}")
-    
-    role_passwords = {
-        "Doctor Dashboard": "doctor123",
-        "Pharmacy Inventory": "pharma123",
-        "Admin Analytics": "admin123"
-    }
-    
-    if password_input == role_passwords[user_role]:
-        authenticated = True
-        st.sidebar.success("🔒 Access Granted")
-    elif password_input != "":
-        st.sidebar.error("❌ Invalid Access Token")
-else:
-    # The Patient Portal remains freely accessible without passkeys
-    authenticated = True
-
-# --- 4. SECURE SIDEBAR NAVIGATION ENGINE ---
-st.sidebar.title("🏥 Lifeline HMS Pro")
-st.sidebar.markdown("---")
-# --- 4. SECURE SIDEBAR NAVIGATION ENGINE ---
-# --- 4. SECURE SIDEBAR NAVIGATION ENGINE ---
-st.sidebar.title("🏥 Lifeline HMS Pro")
-st.sidebar.markdown("---")
-
-# Keep ONLY this single block with the unique key assigned
 user_role = st.sidebar.selectbox(
     "Switch User View:", 
     ["Patient Portal", "Doctor Dashboard", "Pharmacy Inventory", "Admin Analytics"],
     key="main_role_selector"
 )
 
-# Core Security Fix: Default status begins closed for secure routes
 if user_role in ["Doctor Dashboard", "Pharmacy Inventory", "Admin Analytics"]:
     authenticated = False
     st.sidebar.markdown(f"#### 🔐 Secure {user_role} Login")
@@ -227,7 +231,6 @@ if user_role in ["Doctor Dashboard", "Pharmacy Inventory", "Admin Analytics"]:
     elif password_input != "":
         st.sidebar.error("❌ Invalid Access Token")
 else:
-    # Patient Portal remains accessible globally
     authenticated = True
 
 # --- 5. SECURE VIEW LOGIC RUNTIME ---
@@ -237,8 +240,6 @@ if not authenticated:
     st.info("💡 Hint for testing: Use **doctor123**, **pharma123**, or **admin123** based on your selection.")
 
 else:
-    # Notice the 4-SPACE INDENTATION below! This protects the pages behind the password.
-    
     # PAGE 1: PATIENT PORTAL
     if user_role == "Patient Portal":
         st.title("🗓️ Patient Appointment Booking")
@@ -247,7 +248,7 @@ else:
         with st.form("appointment_form", clear_on_submit=True):
             st.subheader("Enter Booking Details")
             patient_name = st.text_input("Full Patient Name", placeholder="e.g. Rahul Sharma")
-            doctor_choice = st.selectbox("Select Department Specialist", ["Dr. Verma (Cardiology)", "Dr. Reddy (Pediatrics)", "Dr. Sen (Neurology)"])
+            doctor_choice = st.selectbox("Select Department Specialist", SPECIALTY_DOCTORS)
             
             col_date, col_time = st.columns(2)
             with col_date:
@@ -277,17 +278,30 @@ else:
         df = pd.read_sql_query("SELECT id AS ID, patient_name AS [Patient Name], doctor AS Doctor, appt_date AS [Scheduled Date], appt_time AS [Time Slot], status AS Status FROM appointments", conn)
         conn.close()
         st.dataframe(df, use_container_width=True, hide_index=True)
+
     # PAGE 2: DOCTOR DASHBOARD
     elif user_role == "Doctor Dashboard":
         st.title("🩺 Medical Practitioner Workspace")
         
         st.subheader("1. Active Operational Schedule")
+        selected_dept = st.selectbox("Filter Schedule by Specialist / Department:", ["All Departments"] + SPECIALTY_DOCTORS)
+        
         conn = sqlite3.connect("hospital.db")
         df = pd.read_sql_query("SELECT id AS ID, patient_name AS [Patient Name], doctor AS Doctor, appt_date AS [Date], appt_time AS [Slot], status AS Status FROM appointments", conn)
         conn.close()
         
+        if selected_dept != "All Departments":
+            df = df[df["Doctor"] == selected_dept]
+        
         if not df.empty:
-            edited_df = st.data_editor(df, column_config={"Status": st.column_config.SelectboxColumn("Appointment Status", options=["Pending", "Confirmed", "Completed", "Cancelled"], required=True)}, disabled=["ID", "Patient Name", "Doctor", "Date", "Slot"], use_container_width=True, key="doctor_grid", hide_index=True)
+            edited_df = st.data_editor(
+                df,
+                column_config={"Status": st.column_config.SelectboxColumn("Appointment Status", options=["Pending", "Confirmed", "Completed", "Cancelled"], required=True)},
+                disabled=["ID", "Patient Name", "Doctor", "Date", "Slot"],
+                use_container_width=True,
+                key="doctor_grid",
+                hide_index=True
+            )
             
             if st.button("💾 Save Schedule Status Updates", type="secondary"):
                 conn = sqlite3.connect("hospital.db")
@@ -342,83 +356,75 @@ else:
                 conn = sqlite3.connect("hospital.db")
                 cursor = conn.cursor()
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-                cursor.execute('INSERT INTO consultations (patient_name, symptoms, diagnosed_disease, prescription, notes, consultation_date) VALUES (?, ?, ?, ?, ?, ?)',
-                               (selected_patient, chosen_symptom, chosen_disease, final_prescription, clinical_notes, current_time))
+                cursor.execute(
+                    'INSERT INTO consultations (patient_name, symptoms, diagnosed_disease, prescription, notes, consultation_date) VALUES (?, ?, ?, ?, ?, ?)',
+                    (selected_patient, chosen_symptom, chosen_disease, final_prescription, clinical_notes, current_time)
+                )
                 cursor.execute("UPDATE appointments SET status = 'Completed' WHERE patient_name = ?", (selected_patient,))
-                
-                # Dynamic Inventory Deduction Check Execution
                 medicine_keywords = {
-                    "Viral Influenza": "Paracetamol 650mg", "Malaria Parasitism": "Artemether-Lumefantrine",
-                    "Acute Bronchitis": "Dextromethorphan Syr.", "Bronchial Asthma": "Budesonide Inhaler",
-                    "Essential Hypertension": "Telmisartan 40mg", "Angina Pectoris": "Nitroglycerin 0.5mg",
-                    "Acute Gastritis": "Pantoprazole 40mg", "Gastroesophageal Reflux Disease (GERD)": "Rabeprazole Combo",
-                    "Rheumatoid Arthritis": "Naproxen 500mg", "Acute Gouty Arthritis": "Febuxostat 40mg"
+                    "Viral Influenza": "Paracetamol 650mg",
+                    "Malaria Parasitism": "Artemether-Lumefantrine",
+                    "Acute Bronchitis": "Dextromethorphan Syr.",
+                    "Bronchial Asthma": "Budesonide Inhaler",
+                    "Essential Hypertension": "Telmisartan 40mg",
+                    "Angina Pectoris": "Nitroglycerin 0.5mg",
+                    "Acute Gastritis": "Pantoprazole 40mg",
+                    "Gastroesophageal Reflux Disease (GERD)": "Rabeprazole Combo",
+                    "Rheumatoid Arthritis": "Naproxen 500mg",
+                    "Acute Gouty Arthritis": "Febuxostat 40mg",
+                    "Chronic Migraine": "Sumatriptan 50mg",
+                    "Tension Headache": "Paracetamol 650mg",
+                    "Focal Epilepsy": "Levetiracetam 500mg",
+                    "Peripheral Neuropathy": "Pregabalin 75mg",
+                    "Bacterial Conjunctivitis": "Moxifloxacin Eye Drops",
+                    "Dry Eye Syndrome": "Carboxymethylcellulose Drops",
+                    "Open-Angle Glaucoma": "Timolol 0.5% Eye Drops",
+                    "Major Depressive Disorder": "Sertraline 50mg",
+                    "Persistent Depressive Disorder": "Escitalopram 10mg",
+                    "Generalized Anxiety Disorder (GAD)": "Escitalopram 10mg",
+                    "Primary Insomnia": "Melatonin 3mg"
                 }
+
                 target_medicine = medicine_keywords.get(chosen_disease)
                 if target_medicine:
-                    cursor.execute("UPDATE inventory SET stock_qty = MAX(0, stock_qty - 1) WHERE medicine_name = ?", (target_medicine,))
-                
+                    cursor.execute(
+                        "UPDATE inventory SET stock_qty = MAX(0, stock_qty - 1) WHERE medicine_name = ?",
+                        (target_medicine,)
+                    )
+
                 conn.commit()
                 conn.close()
-                
+
                 st.session_state["pdf_ready"] = (selected_patient, chosen_disease, chosen_symptom, final_prescription, clinical_notes)
                 st.toast("Case logged into medical database charts!")
                 st.rerun()
-                
-            if "pdf_ready" in st.session_state and st.session_state["pdf_ready"] == selected_patient:
+ 
+            # Fixed tuple index check so PDF button renders reliably
+        if "pdf_ready" in st.session_state and st.session_state["pdf_ready"][0] == selected_patient:
                 p_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_ready"]
                 pdf_bytes = build_prescription_pdf(p_name, p_dis, p_sym, p_rx, p_note)
                 st.markdown("---")
                 st.success("📄 Professional Medical Prescription Document Compiled Successfully!")
-                st.download_button(label="📥 Download Official Printed PDF Prescription", data=pdf_bytes, file_name=f"Prescription_{p_name.replace(' ', '_')}.pdf", mime="application/pdf")
+                st.download_button(
+                    label="📥 Download Official Printed PDF Prescription",
+                    data=pdf_bytes,
+                    file_name=f"Prescription_{p_name.replace(' ', '_')}.pdf",
+                    mime="application/pdf"
+                )
         else:
-            st.info("No active appointments registered yet.")
+            st.info("No active appointments registered for this selection.")
 
-        # PAGE 3: PHARMACY INVENTORY
+    # PAGE 3: PHARMACY INVENTORY
     elif user_role == "Pharmacy Inventory":
         st.title("📦 Medical Dispensary & Pharmacy Stock Management")
         st.write("Track available medicine reserves, check alerts for low stock levels, and update inventories.")
-    
-        conn = sqlite3.connect("hospital.db")
-        cursor = conn.cursor()
-    
-        # ALL lines below are now correctly indented by 8 spaces to stay inside the active block
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS inventory (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                medicine_name TEXT NOT NULL UNIQUE,
-                category TEXT NOT NULL,
-                stock_qty INTEGER NOT NULL,
-                min_required INTEGER NOT NULL
-            )
-        ''')
         
-        # Check if we need to seed the baseline values
-        cursor.execute("SELECT COUNT(*) FROM inventory")
-        if cursor.fetchone() == 0:
-            medicines = [
-                ('Paracetamol 650mg', 'Analgesic / Antipyretic', 120, 30),
-                ('Artemether-Lumefantrine', 'Antimalarial', 15, 10),
-                ('Dextromethorphan Syr.', 'Antitussive Cough Syrup', 45, 15),
-                ('Budesonide Inhaler', 'Bronchodilator', 8, 10),
-                ('Telmisartan 40mg', 'Antihypertensive', 200, 50),
-                ('Nitroglycerin 0.5mg', 'Antianginal Vasodilator', 25, 20),
-                ('Pantoprazole 40mg', 'Antacid / PPI', 350, 100),
-                ('Rabeprazole Combo', 'Antacid / GERD Support', 180, 40),
-                ('Naproxen 500mg', 'NSAID / Anti-inflammatory', 90, 30),
-                ('Febuxostat 40mg', 'Uric Acid Lowering Therapy', 60, 20)
-            ]
-            cursor.executemany("INSERT INTO inventory (medicine_name, category, stock_qty, min_required) VALUES (?, ?, ?, ?)", medicines)
-            conn.commit()
-
-        # Read data securely into display dataframe
+        conn = sqlite3.connect("hospital.db")
         df_inv = pd.read_sql_query("SELECT id AS ID, medicine_name AS [Medicine Name], category AS [Therapeutic Class], stock_qty AS [Current Stock Units], min_required AS [Safety Threshold Limit] FROM inventory", conn)
         conn.close()
         
-        # Alert metrics for stock limits
         low_stock_items = df_inv[df_inv["Current Stock Units"] <= df_inv["Safety Threshold Limit"]]
         
-        # --- RENDER DASHBOARD VISUALS ---
         col_stat1, col_stat2 = st.columns(2)
         col_stat1.metric("Total Maintained Formulas", len(df_inv))
         col_stat2.metric("Critical Low Reorder Alerts", len(low_stock_items), delta=-len(low_stock_items) if len(low_stock_items) > 0 else 0, delta_color="inverse")
@@ -448,7 +454,7 @@ else:
             st.success("Pharmacy inventory tracking log changes successfully committed!")
             st.rerun()
 
-    # --- PAGE 4: ADMIN ANALYTICS ---
+    # PAGE 4: ADMIN ANALYTICS
     elif user_role == "Admin Analytics":
         st.title("📊 Hospital Operational Control Panel")
         conn = sqlite3.connect("hospital.db")
