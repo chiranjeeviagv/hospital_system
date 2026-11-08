@@ -666,28 +666,3 @@ else:
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No disease data logged out via the Doctor Workspace yet.")
-# ==========================================
-# EXTRA PATCH: DATABASE RECORD FALLBACKS
-# ==========================================
-
-# 1. Doctor Workspace Age Fallback Fix (Section 5)
-conn = sqlite3.connect("hospital.db")
-patient_info = conn.execute(
-    "SELECT patient_age FROM appointments WHERE patient_name = ? LIMIT 1", 
-    (selected_patient,)
-).fetchone()
-conn.close()
-
-# Safe checking fallback strategy to prevent TypeError index breaks
-p_age_val = patient_info[0] if (patient_info and patient_info[0] is not None) else 25
-
-
-# 2. Billing Split Fallback Fix (Section 6)
-if not unbilled_df.empty:
-    unbilled_df["display_select"] = unbilled_df["patient_name"] + " — " + unbilled_df["doctor"]
-    selected_record = st.selectbox("Select Pending Patient:", unbilled_df["display_select"].tolist())
-    
-    # Safe splitting fallback logic array
-    split_data = selected_record.split(" — ")
-    chosen_patient = split_data[0] if len(split_data) > 0 else "Unknown Patient"
-    chosen_doctor = split_data[1] if len(split_data) > 1 else "Unknown Doctor"
