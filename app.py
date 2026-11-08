@@ -93,19 +93,20 @@ def init_db():
     cursor = conn.cursor()
     
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS appointments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_name TEXT NOT NULL,
-            patient_age INTEGER,
-            patient_gender TEXT,
-            patient_contact TEXT,
-            patient_problem TEXT,
-            doctor TEXT NOT NULL,
-            appt_date TEXT NOT NULL DEFAULT '',
-            appt_time TEXT NOT NULL DEFAULT '',
-            status TEXT NOT NULL
-        )
+    CREATE TABLE IF NOT EXISTS appointments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_name TEXT NOT NULL,
+        patient_age INTEGER,        -- Missing in production!
+        patient_gender TEXT,
+        patient_contact TEXT,
+        patient_problem TEXT,
+        doctor TEXT NOT NULL,
+        appt_date TEXT NOT NULL DEFAULT '',
+        appt_time TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL
+    )
     ''')
+
     
     cursor.execute("PRAGMA table_info(appointments)")
     columns = [info[1] for info in cursor.fetchall()]
