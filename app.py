@@ -396,32 +396,20 @@ else:
             patient_list = df["Patient Name"].unique().tolist()
             selected_patient = st.selectbox("Select Patient to Diagnose:", patient_list)
             
-            # --- CORRECTED CODE ---
-            conn = sqlite3.connect("hospital.db")
-            cursor = conn.cursor()  # <-- Add this cursor object
-           # --- CORRECTED WORKING CODE ---
-            patient_info = cursor.execute("SELECT patient_age FROM appointments WHERE patient_name = ? LIMIT 1", (selected_patient,)).fetchone()
-
-# Safe index extraction checks
-            p_age_val = patient_info[0] if (patient_info and patient_info[0] is not None) else 25
-
-            st.markdown("---")
-            st.subheader("2. Real-time Patient Diagnostics & Prescription Module")
-            patient_list = df["Patient Name"].unique().tolist()
-            selected_patient = st.selectbox("Select Patient to Diagnose:", patient_list)
-            
-            # --- DATABASE QUERIES RESTORED HERE ---
+            # --- DATABASE QUERIES & FALLBACKS ---
             conn = sqlite3.connect("hospital.db")
             cursor = conn.cursor()
-           # --- CORRECTED WORKING CODE ---
+            
+            # Safely fetch patient age using the cursor
             patient_info = cursor.execute("SELECT patient_age FROM appointments WHERE patient_name = ? LIMIT 1", (selected_patient,)).fetchone()
-
-# Safe index extraction checks
+            
+            # Extract individual value from tuple structure safely
             p_age_val = patient_info[0] if (patient_info and patient_info[0] is not None) else 25
- 
+            
+            # Extract previous consultation history
             history_df = pd.read_sql_query("SELECT consultation_date AS [Date], symptoms AS [Symptoms], diagnosed_disease AS [Diagnosis], prescription AS [Prescription Summary], notes AS [Doctor Notes] FROM consultations WHERE patient_name = ?", conn, params=(selected_patient,))
             conn.close()
-            
+          
             st.markdown("##### 📜 Previous E-Health Consultation Logs")
             if not history_df.empty:
                 st.warning(f"🔄 Revisit Detected! Found {len(history_df)} record(s) for {selected_patient}:")
