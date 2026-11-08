@@ -4,103 +4,22 @@ import plotly.express as px
 import sqlite3
 from datetime import datetime
 import io
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
-def init_db():
-    """Initializes the database structure and safely syncs new specialty medicines."""
-    conn = sqlite3.connect("hospital.db")
-    cursor = conn.cursor()
-    
-    # 1. Appointments Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS appointments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_name TEXT NOT NULL,
-            doctor TEXT NOT NULL,
-            appt_date TEXT NOT NULL DEFAULT '',
-            appt_time TEXT NOT NULL DEFAULT '',
-            status TEXT NOT NULL
-        )
-    ''')
-    
-    cursor.execute("PRAGMA table_info(appointments)")
-    columns = [info[1] for info in cursor.fetchall()]
-    if "appt_date" not in columns:
-        cursor.execute("ALTER TABLE appointments ADD COLUMN appt_date TEXT NOT NULL DEFAULT ''")
-    if "appt_time" not in columns:
-        cursor.execute("ALTER TABLE appointments ADD COLUMN appt_time TEXT NOT NULL DEFAULT ''")
-    
-    # 2. Consultations Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS consultations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_name TEXT NOT NULL,
-            symptoms TEXT NOT NULL,
-            diagnosed_disease TEXT NOT NULL,
-            prescription TEXT NOT NULL,
-            notes TEXT,
-            consultation_date TEXT NOT NULL
-        )
-    ''')
-    
-    cursor.execute("SELECT COUNT(*) FROM appointments")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO appointments (patient_name, doctor, appt_date, appt_time, status) VALUES ('Rahul Sharma', 'Dr. Verma (Cardiology)', '2026-11-08', '10:00 AM', 'Confirmed')")
-        cursor.execute("INSERT INTO appointments (patient_name, doctor, appt_date, appt_time, status) VALUES ('Priya Patel', 'Dr. Reddy (Pediatrics)', '2026-11-08', '02:30 PM', 'Pending')")
+# ==========================================
+# 1. CORE DATA STRUCTURE ENGINE MAPS
+# ==========================================
 
-    # 3. Pharmacy Stock Inventory Table (INSERT OR IGNORE safely updates live DBs)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS inventory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            medicine_name TEXT NOT NULL UNIQUE,
-            category TEXT NOT NULL,
-            stock_qty INTEGER NOT NULL,
-            min_required INTEGER NOT NULL
-        )
-    ''')
-    
-    medicines = [
-        ('Paracetamol 650mg', 'Analgesic / Antipyretic', 120, 30),
-        ('Artemether-Lumefantrine', 'Antimalarial', 15, 10),
-        ('Dextromethorphan Syr.', 'Antitussive Cough Syrup', 45, 15),
-        ('Budesonide Inhaler', 'Bronchodilator', 8, 10),
-        ('Telmisartan 40mg', 'Antihypertensive', 200, 50),
-        ('Nitroglycerin 0.5mg', 'Antianginal Vasodilator', 25, 20),
-        ('Pantoprazole 40mg', 'Antacid / PPI', 350, 100),
-        ('Rabeprazole Combo', 'Antacid / GERD Support', 180, 40),
-        ('Naproxen 500mg', 'NSAID / Anti-inflammatory', 90, 30),
-        ('Febuxostat 40mg', 'Uric Acid Lowering Therapy', 60, 20),
-        ('Sumatriptan 50mg', 'Antimigraine / Triptan', 75, 20),
-        ('Levetiracetam 500mg', 'Anticonvulsant', 110, 30),
-        ('Pregabalin 75mg', 'Neuropathic Pain Agent', 95, 25),
-        ('Moxifloxacin Eye Drops', 'Ophthalmic Antibiotic', 40, 15),
-        ('Carboxymethylcellulose Drops', 'Ocular Lubricant', 65, 20),
-        ('Timolol 0.5% Eye Drops', 'Antiglaucoma Agent', 30, 10),
-        ('Sertraline 50mg', 'SSRI Antidepressant', 140, 40),
-        ('Escitalopram 10mg', 'SSRI Anxiolytic', 160, 40),
-        ('Melatonin 3mg', 'Sleep Regulator', 85, 25)
-    ]
-    cursor.executemany(
-        "INSERT OR IGNORE INTO inventory (medicine_name, category, stock_qty, min_required) VALUES (?, ?, ?, ?)",
-        medicines
-    )
-    
-    conn.commit()
-    conn.close()
-
-init_db()
-
-# --- 2. ENGINE MAPS ---
 SPECIALTY_DOCTORS = [
     "Dr. Sharma (General Medicine)",
-    "Dr. Verma (Cardiology)",
-    "Dr. Reddy (Pediatrics)",
+    "Dr. Varma (Cardiology)",
+    "Dr. pradip (Pediatrics)",
     "Dr. Sen (Neurology)",
-    "Dr. Nair (Ophthalmology)",
-    "Dr. Rao (Psychiatry)"
+    "Dr. Manish (Ophthalmology)",
+    "Dr. Radha (Psychiatry)"
 ]
 
 SYMPTOM_VARIANTS = [
@@ -136,7 +55,7 @@ PRESCRIPTION_SUGGESTIONS = {
     "Malaria Parasitism": "Antimalarial course: Tab. Artemether-Lumefantrine regimen as directed.",
     "Acute Bronchitis": "Cough suppressant: Syr. Dextromethorphan 10ml TDS & Warm saline gargles.",
     "Bronchial Asthma": "Maintenance Inhaler: Budesonide + Formoterol puffs twice daily as needed.",
-    "Essential Hypertension": "Antihypertensive: Tab. Telmisartan 40mg OD mornings, monitor BP daily.",
+    "Essential Hypertension": "Antihihypertensive: Tab. Telmisartan 40mg OD mornings, monitor BP daily.",
     "Angina Pectoris": "Cardioprotective: Tab. Nitroglycerin 0.5mg sublingual SOS, Tab. Aspirin 75mg OD.",
     "Acute Gastritis": "Antacid control: Cap. Pantoprazole 40mg OD before breakfast for 7 days.",
     "Gastroesophageal Reflux Disease (GERD)": "H2 Blocker combo: Cap. Rabeprazole 20mg + Domperidone 30mg SR before meals.",
@@ -153,17 +72,136 @@ PRESCRIPTION_SUGGESTIONS = {
     "Major Depressive Disorder": "SSRI Therapy: Tab. Sertraline 50mg OD after breakfast + Cognitive Behavioral Therapy (CBT).",
     "Persistent Depressive Disorder": "SSRI Maintenance: Tab. Escitalopram 10mg OD mornings + weekly psychotherapy.",
     "Generalized Anxiety Disorder (GAD)": "Anxiolytic / SSRI: Tab. Escitalopram 10mg OD + breathing & mindfulness exercises.",
-    "Primary Insomnia": "Sleep Hygiene protocol + Tab. Melatonin 3mg 30 mins before bedtime for 14 days."
+    "Primary Insomnia": "Sleep Hygiene protocol + Tab. Melatonin 5mg 30 mins before bedtime for 14 days."
 }
 
-# --- 3. PDF GENERATION UTILITY ---
+DOCTOR_FEE_SCHEDULE = {
+    "Dr. Sharma (General Medicine)": 500.00,
+    "Dr. Varma (Cardiology)": 1200.00,
+    "Dr. pradip (Pediatrics)": 600.00,
+    "Dr. Sen (Neurology)": 1500.00,
+    "Dr. Manish (Ophthalmology)": 700.00,
+    "Dr. Radha (Psychiatry)": 1000.00
+}
+
+# ==========================================
+# 2. DATABASE INITIALIZATION ENGINE
+# ==========================================
+
+def init_db():
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS appointments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_name TEXT NOT NULL,
+            patient_age INTEGER,
+            patient_gender TEXT,
+            patient_contact TEXT,
+            patient_problem TEXT,
+            doctor TEXT NOT NULL,
+            appt_date TEXT NOT NULL DEFAULT '',
+            appt_time TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL
+        )
+    ''')
+    
+    cursor.execute("PRAGMA table_info(appointments)")
+    columns = [info[1] for info in cursor.fetchall()]
+    if "appt_date" not in columns:
+        cursor.execute("ALTER TABLE appointments ADD COLUMN appt_date TEXT NOT NULL DEFAULT ''")
+    if "appt_time" not in columns:
+        cursor.execute("ALTER TABLE appointments ADD COLUMN appt_time TEXT NOT NULL DEFAULT ''")
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS consultations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_name TEXT NOT NULL,
+            patient_age INTEGER,
+            symptoms TEXT NOT NULL,
+            diagnosed_disease TEXT NOT NULL,
+            prescription TEXT NOT NULL,
+            notes TEXT,
+            consultation_date TEXT NOT NULL
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS inventory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            medicine_name TEXT NOT NULL UNIQUE,
+            category TEXT NOT NULL,
+            stock_qty INTEGER NOT NULL,
+            min_required INTEGER NOT NULL
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS billing (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_name TEXT NOT NULL,
+            doctor_assigned TEXT NOT NULL,
+            consultation_fee REAL NOT NULL,
+            tax_amount REAL NOT NULL,
+            grand_total REAL NOT NULL,
+            payment_status TEXT NOT NULL,
+            billing_date TEXT NOT NULL
+        )
+    ''')
+    
+    cursor.execute("SELECT COUNT(*) FROM appointments")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO appointments (patient_name, doctor, appt_date, appt_time, status) VALUES ('Rama', 'Dr. Varma (Cardiology)', '2026-11-08', '10:00 AM', 'Confirmed')")
+        cursor.execute("INSERT INTO appointments (patient_name, doctor, appt_date, appt_time, status) VALUES ('Priya Patel', 'Dr. Reddy (Pediatrics)', '2026-11-08', '02:30 PM', 'Pending')")
+
+    medicines = [
+        ('Paracetamol 650mg', 'Analgesic / Antipyretic', 120, 30),
+        ('Artemether-Lumefantrine', 'Antimalarial', 15, 10),
+        ('Dextromethorphan Syr.', 'Antitussive Cough Syrup', 45, 15),
+        ('Budesonide Inhaler', 'Bronchodilator', 8, 10),
+        ('Telmisartan 40mg', 'Antihypertensive', 200, 50),
+        ('Nitroglycerin 0.5mg', 'Antianginal Vasodilator', 25, 20),
+        ('Pantoprazole 40mg', 'Antacid / PPI', 350, 100),
+        ('Rabeprazole Combo', 'Antacid / GERD Support', 180, 40),
+        ('Naproxen 500mg', 'NSAID / Anti-inflammatory', 90, 30),
+        ('Febuxostat 40mg', 'Uric Acid Lowering Therapy', 60, 20),
+        ('Sumatriptan 50mg', 'Antimigraine / Triptan', 75, 20),
+        ('Levetiracetam 500mg', 'Anticonvulsant', 110, 30),
+        ('Pregabalin 75mg', 'Neuropathic Pain Agent', 95, 25),
+        ('Moxifloxacin Eye Drops', 'Ophthalmic Antibiotic', 40, 15),
+        ('Carboxymethylcellulose Drops', 'Ocular Lubricant', 65, 20),
+        ('Timolol 0.5% Eye Drops', 'Antiglaucoma Agent', 30, 10),
+        ('Sertraline 50mg', 'SSRI Antidepressant', 140, 40),
+        ('Escitalopram 10mg', 'SSRI Anxiolytic', 160, 40),
+        ('Melatonin 5mg', 'Sleep Regulator', 85, 25),
+        ('Mirtazapine 15mg', 'Antidepressant', 120, 30),
+        ('Clonazepam 0.5mg', 'Anxiolytic', 100, 30),
+        ('Cyclopramine 10mg', 'Antidepressant', 100, 30),
+        ('Amitriptyline 10mg', 'Tricyclic Antidepressant', 100, 30),  
+        ('Fluoxetine 20mg', 'SSRI Antidepressant', 100, 30),
+        ('Flexon 10mg', 'Antidepressant', 100, 30),
+        ('Quetiapine 50mg', 'Atypical Antipsychotic', 100, 30)
+    ]    
+    cursor.executemany(
+        "INSERT OR IGNORE INTO inventory (medicine_name, category, stock_qty, min_required) VALUES (?, ?, ?, ?)",
+        medicines
+    )
+    
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# ==========================================
+# 3. PDF GENERATION UTILITIES
+# ==========================================
+
 def build_prescription_pdf(name, disease, symptoms, Rx, notes):
-    """Generates a professional medical layout in-memory and returns bytes."""
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
     styles = getSampleStyleSheet()
     
-    # Custom Corporate Clinical Palette Layout Styles
     title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], alignment=TA_CENTER, textColor='#1e3d59', fontSize=24, spaceAfter=6)
     sub_style = ParagraphStyle('DocSub', parent=styles['Normal'], alignment=TA_CENTER, textColor='#17b978', fontSize=10, spaceAfter=20)
     meta_style = ParagraphStyle('DocMeta', parent=styles['Normal'], fontSize=11, leading=16, spaceAfter=8)
@@ -171,50 +209,87 @@ def build_prescription_pdf(name, disease, symptoms, Rx, notes):
     body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontSize=11, leading=16, leftIndent=10)
     
     story = []
-    
-    # Clinic Banner Heading
     story.append(Paragraph("🏥 LIFELINE HEALTHCARE MEDICAL CENTER", title_style))
     story.append(Paragraph("E-Health Portal Automated Prescription Record System", sub_style))
     story.append(Paragraph(f"<b>Date:</b> {datetime.now().strftime('%Y-%m-%d %H:%M')}", meta_style))
     story.append(Paragraph(f"<b>Patient Name:</b> {name}", meta_style))
-    story.append(Paragraph("<hr/>", meta_style))
+    story.append(Spacer(1, 10))
     
-    # Clinical Analysis Parameters
     story.append(Paragraph("Clinical Diagnostics Summary", section_title))
     story.append(Paragraph(f"<b>Presenting Symptoms:</b> {symptoms}", body_style))
     story.append(Paragraph(f"<b>Inferred Final Diagnosis:</b> {disease}", body_style))
     story.append(Spacer(1, 10))
     
-    # Pharmacy Orders
     story.append(Paragraph("💊 Prescribed Medications (Rx Options)", section_title))
     story.append(Paragraph(Rx.replace('\n', '<br/>'), body_style))
     story.append(Spacer(1, 10))
     
-    # Professional Advice
     story.append(Paragraph("📝 Lifestyle Advice & Clinical Notes", section_title))
     story.append(Paragraph(notes if notes else "No additional restrictions specified.", body_style))
-    
-    # Sign off placeholder
     story.append(Spacer(1, 40))
-    story.append(Paragraph("<i>Authorized Signature (Digitally Validated Record)</i>", ParagraphStyle('Sign', parent=styles['Normal'], alignment=TA_LEFT, fontSize=9)))
+    
+    story.append(Paragraph("Authorized Signature (Digitally Validated Record)", ParagraphStyle('Sign', parent=styles['Normal'], alignment=TA_LEFT, fontSize=9)))
     
     doc.build(story)
     buffer.seek(0)
     return buffer.getvalue()
 
-# --- 4. SECURE SIDEBAR NAVIGATION ENGINE ---
-st.set_page_config(page_title="Lifeline HMS Pro", page_icon="🏥", layout="wide")
+def build_invoice_pdf(invoice_id, name, doctor, base_fee, tax, total, status, date_str):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=50, leftMargin=50, topMargin=50, bottomMargin=50)
+    styles = getSampleStyleSheet()
+    
+    brand_title = ParagraphStyle('InvBrand', parent=styles['Heading1'], alignment=TA_CENTER, textColor='#1e3d59', fontSize=22, spaceAfter=4)
+    brand_sub = ParagraphStyle('InvSub', parent=styles['Normal'], alignment=TA_CENTER, textColor='#777777', fontSize=9, spaceAfter=25)
+    inv_title = ParagraphStyle('InvTitle', parent=styles['Heading2'], textColor='#1e3d59', fontSize=14, spaceAfter=15)
+    meta_style = ParagraphStyle('InvMeta', parent=styles['Normal'], fontSize=10, leading=14, spaceAfter=6)
+    table_label = ParagraphStyle('TblLabel', parent=styles['Normal'], fontSize=11, leading=16)
+    total_style = ParagraphStyle('TblTotal', parent=styles['Heading3'], textColor='#17b978', fontSize=12, leading=16)
+    footer_style = ParagraphStyle('InvFoot', parent=styles['Normal'], alignment=TA_CENTER, textColor='#888888', fontSize=8, spaceBefore=40)
+    
+    story = []
+    story.append(Paragraph("🏥 LIFELINE HEALTHCARE MEDICAL CENTER", brand_title))
+    story.append(Paragraph("123 Health Boulevard, Wellness District | Support: +91 99999 88888", brand_sub))
+    
+    story.append(Paragraph(f"<b>PATIENT INVOICE RECEIPT</b>", inv_title))
+    story.append(Paragraph(f"<b>Invoice ID:</b> #LL-2026-{invoice_id}", meta_style))
+    story.append(Paragraph(f"<b>Date/Time:</b> {date_str}", meta_style))
+    story.append(Paragraph(f"<b>Patient Name:</b> {name}", meta_style))
+    story.append(Paragraph(f"<b>Attending Clinician:</b> {doctor}", meta_style))
+    story.append(Spacer(1, 15))
+    story.append(Paragraph("<hr/>", meta_style))
+    story.append(Spacer(1, 10))
+    
+    story.append(Paragraph("<b>Itemised Description charges:</b>", meta_style))
+    story.append(Spacer(1, 5))
+    story.append(Paragraph(f"• Clinical Consultation Services Base Fee: <b>₹{base_fee:,.2f}</b>", table_label))
+    story.append(Paragraph(f"• Central Centralized Medical Tax Services (18% GST): <b>₹{tax:,.2f}</b>", table_label))
+    story.append(Spacer(1, 10))
+    story.append(Paragraph(f"<b>Grand Total Amount Settled: ₹{total:,.2f}</b>", total_style))
+    story.append(Paragraph(f"<b>Transaction Status:</b> <font color='#17b978'><b>{status}</b></font>", table_label))
+    
+    story.append(Spacer(1, 30))
+    story.append(Paragraph("<i>This is a computer-generated transaction record voucher. No physical signature is required.</i>", footer_style))
+    
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
 
-st.sidebar.title("🏥 Lifeline HMS Pro")
+# ==========================================
+# 4. SECURE SIDEBAR NAVIGATION ENGINE
+# ==========================================
+
+st.set_page_config(page_title="Lifeline HMS Pro", page_icon="🏥", layout="wide")
+st.sidebar.title("Good Health Clinical Management System")
 st.sidebar.markdown("---")
 
 user_role = st.sidebar.selectbox(
-    "Switch User View:", 
-    ["Patient Portal", "Doctor Dashboard", "Pharmacy Inventory", "Admin Analytics"],
+    "Switch User View:",
+    ["Patient Portal", "Doctor Dashboard", "Pharmacy Inventory", "Billing Dashboard", "Admin Analytics"],
     key="main_role_selector"
 )
 
-if user_role in ["Doctor Dashboard", "Pharmacy Inventory", "Admin Analytics"]:
+if user_role in ["Doctor Dashboard", "Pharmacy Inventory", "Billing Dashboard", "Admin Analytics"]:
     authenticated = False
     st.sidebar.markdown(f"#### 🔐 Secure {user_role} Login")
     password_input = st.sidebar.text_input("Enter Access Password:", type="password", key=f"pwd_{user_role}")
@@ -222,6 +297,7 @@ if user_role in ["Doctor Dashboard", "Pharmacy Inventory", "Admin Analytics"]:
     role_passwords = {
         "Doctor Dashboard": "doctor123",
         "Pharmacy Inventory": "pharma123",
+        "Billing Dashboard": "billing123",
         "Admin Analytics": "admin123"
     }
     
@@ -231,47 +307,50 @@ if user_role in ["Doctor Dashboard", "Pharmacy Inventory", "Admin Analytics"]:
     elif password_input != "":
         st.sidebar.error("❌ Invalid Access Token")
 else:
-    authenticated = True
+    authenticated = True 
 
-# --- 5. SECURE VIEW LOGIC RUNTIME ---
+# ==========================================
+# 5. SECURE VIEW LOGIC RUNTIME
+# ==========================================
+
 if not authenticated:
     st.title("🔒 Restricted Clinical Access Area")
-    st.warning("Please provide the correct authorization credentials in the left sidebar to unlock this terminal page dashboard view.")
-    st.info("💡 Hint for testing: Use **doctor123**, **pharma123**, or **admin123** based on your selection.")
-
+    st.warning("Please provide the correct credentials in the sidebar to unlock this dashboard view.")
+    st.info("💡 Hint: Use doctor123, pharma123, billing123, or admin123 based on selection.")
 else:
-    # PAGE 1: PATIENT PORTAL
+    # --- PAGE 1: PATIENT PORTAL ---
     if user_role == "Patient Portal":
         st.title("🗓️ Patient Appointment Booking")
         st.write("Fill out the interactive form below to book a clinical slot.")
-        
         with st.form("appointment_form", clear_on_submit=True):
             st.subheader("Enter Booking Details")
             patient_name = st.text_input("Full Patient Name", placeholder="e.g. Rahul Sharma")
+            p_age = st.number_input("Patient Age", min_value=0, max_value=120, value=25)
+            p_gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+            p_contact = st.text_input("Contact Number")
+            p_problem = st.text_area("Chief Medical Complaint")
             doctor_choice = st.selectbox("Select Department Specialist", SPECIALTY_DOCTORS)
-            
             col_date, col_time = st.columns(2)
             with col_date:
                 appointment_date = st.date_input("Select Appointment Date", min_value=datetime.today().date())
             with col_time:
                 appointment_time = st.selectbox("Select Available Time Slot", ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM"])
-                
             submit_button = st.form_submit_button("Confirm Appointment Slot")
             
             if submit_button:
                 if patient_name.strip() == "":
-                    st.error("Please enter a valid patient name to book an appointment.")
+                    st.error("Please enter a valid patient name.")
                 else:
                     conn = sqlite3.connect("hospital.db")
                     cursor = conn.cursor()
                     cursor.execute(
-                        "INSERT INTO appointments (patient_name, doctor, appt_date, appt_time, status) VALUES (?, ?, ?, ?, ?)",
-                        (patient_name, doctor_choice, str(appointment_date), appointment_time, "Pending")
+                        "INSERT INTO appointments (patient_name, patient_age, patient_gender, patient_contact, patient_problem, doctor, appt_date, appt_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (patient_name, p_age, p_gender, p_contact, p_problem, doctor_choice, str(appointment_date), appointment_time, "Pending")
                     )
                     conn.commit()
                     conn.close()
-                    st.success(f"🎉 Success! Appointment requested with {doctor_choice} on {appointment_date} at {appointment_time}.")
-
+                    st.success(f"🎉 Appointment requested with {doctor_choice} on {appointment_date} at {appointment_time}.")
+                    
         st.markdown("---")
         st.subheader("📋 Active Registered Requests")
         conn = sqlite3.connect("hospital.db")
@@ -279,10 +358,9 @@ else:
         conn.close()
         st.dataframe(df, use_container_width=True, hide_index=True)
 
-    # PAGE 2: DOCTOR DASHBOARD
+    # --- PAGE 2: DOCTOR DASHBOARD ---
     elif user_role == "Doctor Dashboard":
         st.title("🩺 Medical Practitioner Workspace")
-        
         st.subheader("1. Active Operational Schedule")
         selected_dept = st.selectbox("Filter Schedule by Specialist / Department:", ["All Departments"] + SPECIALTY_DOCTORS)
         
@@ -292,7 +370,7 @@ else:
         
         if selected_dept != "All Departments":
             df = df[df["Doctor"] == selected_dept]
-        
+            
         if not df.empty:
             edited_df = st.data_editor(
                 df,
@@ -312,14 +390,16 @@ else:
                 conn.close()
                 st.success("Patient schedules synchronized!")
                 st.rerun()
-
+                
             st.markdown("---")
             st.subheader("2. Real-time Patient Diagnostics & Prescription Module")
-            
             patient_list = df["Patient Name"].unique().tolist()
-            selected_patient = st.selectbox("Select Patient to Diagnose / View EHR History:", patient_list)
+            selected_patient = st.selectbox("Select Patient to Diagnose:", patient_list)
             
             conn = sqlite3.connect("hospital.db")
+            patient_info = conn.execute("SELECT patient_age FROM appointments WHERE patient_name = ? LIMIT 1", (selected_patient,)).fetchone()
+            p_age_val = patient_info[0] if patient_info else 0
+            
             history_df = pd.read_sql_query("SELECT consultation_date AS [Date], symptoms AS [Symptoms], diagnosed_disease AS [Diagnosis], prescription AS [Prescription Summary], notes AS [Doctor Notes] FROM consultations WHERE patient_name = ?", conn, params=(selected_patient,))
             conn.close()
             
@@ -332,21 +412,19 @@ else:
                 
             st.markdown("---")
             st.markdown(f"##### ✍️ Create New Clinical Entry for {selected_patient}")
-            
             col_diag, col_presc = st.columns(2)
             with col_diag:
                 st.info("🧪 Step A: Choose Presenting Symptoms")
                 chosen_symptom = st.selectbox("Observed Variant Pathway:", SYMPTOM_VARIANTS)
                 available_diseases = DISEASE_ENGINE[chosen_symptom]
                 chosen_disease = st.selectbox("Inferred Medical Condition Variant:", available_diseases)
-                
             with col_presc:
                 st.success("💊 Step B: Smart Prescriptive Suggestions Engine")
                 suggested_rx = PRESCRIPTION_SUGGESTIONS[chosen_disease]
                 st.caption("AI Clinical Decision Support Recommendation:")
                 st.code(suggested_rx, language="markdown")
                 final_prescription = st.text_area("Finalized Pharmacy Prescription:", value=suggested_rx, height=70)
-                clinical_notes = st.text_input("Additional Case Notes / Lifestyle advice:", placeholder="e.g. Bedrest for 3 days")
+                clinical_notes = st.text_input("Additional Case Notes:", placeholder="e.g. Bedrest for 3 days")
                 
             col_btn1, _ = st.columns(2)
             with col_btn1:
@@ -356,11 +434,13 @@ else:
                 conn = sqlite3.connect("hospital.db")
                 cursor = conn.cursor()
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+                
                 cursor.execute(
-                    'INSERT INTO consultations (patient_name, symptoms, diagnosed_disease, prescription, notes, consultation_date) VALUES (?, ?, ?, ?, ?, ?)',
-                    (selected_patient, chosen_symptom, chosen_disease, final_prescription, clinical_notes, current_time)
+                    'INSERT INTO consultations (patient_name, patient_age, symptoms, diagnosed_disease, prescription, notes, consultation_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    (selected_patient, p_age_val, chosen_symptom, chosen_disease, final_prescription, clinical_notes, current_time)
                 )
                 cursor.execute("UPDATE appointments SET status = 'Completed' WHERE patient_name = ?", (selected_patient,))
+                
                 medicine_keywords = {
                     "Viral Influenza": "Paracetamol 650mg",
                     "Malaria Parasitism": "Artemether-Lumefantrine",
@@ -382,31 +462,28 @@ else:
                     "Major Depressive Disorder": "Sertraline 50mg",
                     "Persistent Depressive Disorder": "Escitalopram 10mg",
                     "Generalized Anxiety Disorder (GAD)": "Escitalopram 10mg",
-                    "Primary Insomnia": "Melatonin 3mg"
+                    "Primary Insomnia": "Melatonin 5mg"
                 }
 
                 target_medicine = medicine_keywords.get(chosen_disease)
                 if target_medicine:
-                    cursor.execute(
-                        "UPDATE inventory SET stock_qty = MAX(0, stock_qty - 1) WHERE medicine_name = ?",
-                        (target_medicine,)
-                    )
+                    cursor.execute("UPDATE inventory SET stock_qty = MAX(0, stock_qty - 1) WHERE medicine_name = ?", (target_medicine,))
 
                 conn.commit()
                 conn.close()
 
-                st.session_state["pdf_ready"] = (selected_patient, chosen_disease, chosen_symptom, final_prescription, clinical_notes)
+                st.session_state["pdf_ready_patient"] = selected_patient
+                st.session_state["pdf_data"] = (selected_patient, chosen_disease, chosen_symptom, final_prescription, clinical_notes)
                 st.toast("Case logged into medical database charts!")
                 st.rerun()
- 
-            # Fixed tuple index check so PDF button renders reliably
-        if "pdf_ready" in st.session_state and st.session_state["pdf_ready"][0] == selected_patient:
-                p_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_ready"]
+
+            if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
+                p_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_data"]
                 pdf_bytes = build_prescription_pdf(p_name, p_dis, p_sym, p_rx, p_note)
                 st.markdown("---")
-                st.success("📄 Professional Medical Prescription Document Compiled Successfully!")
+                st.success("📄 Medical Prescription Document Compiled Successfully!")
                 st.download_button(
-                    label="📥 Download Official Printed PDF Prescription",
+                    label="📥 Download Printed PDF Prescription",
                     data=pdf_bytes,
                     file_name=f"Prescription_{p_name.replace(' ', '_')}.pdf",
                     mime="application/pdf"
@@ -414,10 +491,9 @@ else:
         else:
             st.info("No active appointments registered for this selection.")
 
-    # PAGE 3: PHARMACY INVENTORY
+    # --- PAGE 3: PHARMACY INVENTORY ---
     elif user_role == "Pharmacy Inventory":
         st.title("📦 Medical Dispensary & Pharmacy Stock Management")
-        st.write("Track available medicine reserves, check alerts for low stock levels, and update inventories.")
         
         conn = sqlite3.connect("hospital.db")
         df_inv = pd.read_sql_query("SELECT id AS ID, medicine_name AS [Medicine Name], category AS [Therapeutic Class], stock_qty AS [Current Stock Units], min_required AS [Safety Threshold Limit] FROM inventory", conn)
@@ -436,13 +512,7 @@ else:
         st.markdown("---")
         st.subheader("Live Inventory Editor")
         
-        edited_inv = st.data_editor(
-            df_inv,
-            disabled=["ID", "Medicine Name", "Therapeutic Class"],
-            use_container_width=True,
-            hide_index=True,
-            key="inventory_editor"
-        )
+        edited_inv = st.data_editor(df_inv, disabled=["ID", "Medicine Name", "Therapeutic Class"], use_container_width=True, hide_index=True, key="inventory_editor")
         
         if st.button("💾 Apply & Update Inventory Balances", type="primary"):
             conn = sqlite3.connect("hospital.db")
@@ -454,7 +524,86 @@ else:
             st.success("Pharmacy inventory tracking log changes successfully committed!")
             st.rerun()
 
-    # PAGE 4: ADMIN ANALYTICS
+    # --- PAGE 4: BILLING DASHBOARD ---
+    elif user_role == "Billing Dashboard":
+        st.title("💰 Patient Checkouts & Invoice Generator")
+        
+        conn = sqlite3.connect("hospital.db")
+        query = """
+            SELECT DISTINCT a.patient_name, a.doctor 
+            FROM appointments a
+            WHERE a.status = 'Completed' 
+            AND a.patient_name NOT IN (SELECT patient_name FROM billing)
+        """
+        unbilled_df = pd.read_sql_query(query, conn)
+        conn.close()
+
+        col_bill_form, col_bill_log = st.columns(2)
+
+        with col_bill_form:
+            st.subheader("💳 Process Pending Checkout")
+            if not unbilled_df.empty:
+                unbilled_df["display_select"] = unbilled_df["patient_name"] + " — " + unbilled_df["doctor"]
+                selected_record = st.selectbox("Select Pending Patient:", unbilled_df["display_select"].tolist())
+                
+                chosen_patient = selected_record.split(" — ")[0]
+                chosen_doctor = selected_record.split(" — ")[1]
+                
+                base_fee = DOCTOR_FEE_SCHEDULE.get(chosen_doctor, 500.00)
+                tax_calc = round(base_fee * 0.18, 2)
+                total_bill = base_fee + tax_calc
+                
+                st.info(f"📋 **Billing Summary for {chosen_patient}:**")
+                st.metric("Base Consultation Fee", f"₹{base_fee:,.2f}")
+                st.metric("Tax Amount (18% GST)", f"₹{tax_calc:,.2f}")
+                st.metric("Grand Total Due", f"₹{total_bill:,.2f}")
+                
+                pay_method = st.selectbox("Payment Method:", ["Cash", "UPI / QR Scanner", "Credit/Debit Card", "Insurance Claim"])
+                
+                if st.button("🚀 Process Payment & Issue Invoice", type="primary"):
+                    conn = sqlite3.connect("hospital.db")
+                    cursor = conn.cursor()
+                    current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    
+                    cursor.execute(
+                        "INSERT INTO billing (patient_name, doctor_assigned, consultation_fee, tax_amount, grand_total, payment_status, billing_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (chosen_patient, chosen_doctor, base_fee, tax_calc, total_bill, f"Paid via {pay_method}", current_date)
+                    )
+                    last_id = cursor.lastrowid
+                    conn.commit()
+                    conn.close()
+                    
+                    st.session_state["invoice_ready_id"] = last_id
+                    st.session_state["invoice_pdf_data"] = (last_id, chosen_patient, chosen_doctor, base_fee, tax_calc, total_bill, f"Paid via {pay_method}", current_date)
+                    st.success(f"🎉 Receipt generated for {chosen_patient}.")
+                    st.rerun()
+            else:
+                st.info("✨ Clean Slate: No pending unbilled patient checkouts found.")
+
+            if "invoice_ready_id" in st.session_state:
+                i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str = st.session_state["invoice_pdf_data"]
+                inv_bytes = build_invoice_pdf(i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str)
+                st.markdown("---")
+                st.success("📄 Invoice Receipt PDF Compiled Successfully!")
+                st.download_button(
+                    label="📥 Download Printed Billing Receipt",
+                    data=inv_bytes,
+                    file_name=f"Invoice_{i_id}_{p_name.replace(' ', '_')}.pdf",
+                    mime="application/pdf"
+                )
+
+        with col_bill_log:
+            st.subheader("📜 Historical Financial Transaction Logs")
+            conn = sqlite3.connect("hospital.db")
+            billing_history_df = pd.read_sql_query("SELECT id AS [Inv ID], patient_name AS [Patient Name], grand_total AS [Total Paid], payment_status AS [Status], billing_date AS [Date] FROM billing ORDER BY id DESC", conn)
+            conn.close()
+            if not billing_history_df.empty:
+                st.dataframe(billing_history_df, use_container_width=True, hide_index=True)
+            else:
+                st.caption("No invoices issued yet today.")
+
+    # --- PAGE 5: ADMIN ANALYTICS ---
+                # --- PAGE 5: ADMIN ANALYTICS (STYLED) ---
     elif user_role == "Admin Analytics":
         st.title("📊 Hospital Operational Control Panel")
         conn = sqlite3.connect("hospital.db")
@@ -467,20 +616,78 @@ else:
         col2.metric("Awaiting Approval", len(df_app[df_app["status"] == "Pending"]))
         col3.metric("Completed Treatments", len(df_app[df_app["status"] == "Completed"]))
         st.markdown("---")
+        
         if not df_cons.empty:
             st.subheader("📈 Case Allocation by Diagnosed Conditions")
             chart_data = df_cons["diagnosed_disease"].value_counts().reset_index()
             chart_data.columns = ["Disease Variant", "Total Incidences"]
+            
+            # Custom styled dashboard chart template tracking
             fig = px.bar(
                 chart_data, 
                 x="Disease Variant", 
                 y="Total Incidences", 
-                color="Disease Variant", 
-                title="Epidemiological Variant Workload Distribution Map", 
+                color="Total Incidences",
+                color_continuous_scale="Viridis", # Smooth teal-to-yellow clinical chart style
+                title="Epidemiological Workload Distribution Map", 
                 text_auto=True
             )
+            
+            # Apply corporate canvas adjustments layout parameters
+            fig.update_layout(
+                template="plotly_white",
+                xaxis_title="Diagnosed Disease Pathway",
+                yaxis_title="Patient Record Count",
+                font=dict(family="Arial", size=12),
+                showlegend=False
+            )
+            
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("No disease data logged out via the Doctor Workspace yet to graph out distribution metrics.")
+            st.info("No disease data logged out via the Doctor Workspace yet.")
 
+        st.title("📊 Hospital Operational Control Panel")
+        conn = sqlite3.connect("hospital.db")
+        df_app = pd.read_sql_query("SELECT * FROM appointments", conn)
+        df_cons = pd.read_sql_query("SELECT * FROM consultations", conn)
+        conn.close()
         
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Patient Bookings", len(df_app))
+        col2.metric("Awaiting Approval", len(df_app[df_app["status"] == "Pending"]))
+        col3.metric("Completed Treatments", len(df_app[df_app["status"] == "Completed"]))
+        st.markdown("---")
+        
+        if not df_cons.empty:
+            st.subheader("📈 Case Allocation by Diagnosed Conditions")
+            chart_data = df_cons["diagnosed_disease"].value_counts().reset_index()
+            chart_data.columns = ["Disease Variant", "Total Incidences"]
+            fig = px.bar(chart_data, x="Disease Variant", y="Total Incidences", color="Disease Variant", title="Epidemiological Workload Distribution Map", text_auto=True)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No disease data logged out via the Doctor Workspace yet.")
+# ==========================================
+# EXTRA PATCH: DATABASE RECORD FALLBACKS
+# ==========================================
+
+# 1. Doctor Workspace Age Fallback Fix (Section 5)
+conn = sqlite3.connect("hospital.db")
+patient_info = conn.execute(
+    "SELECT patient_age FROM appointments WHERE patient_name = ? LIMIT 1", 
+    (selected_patient,)
+).fetchone()
+conn.close()
+
+# Safe checking fallback strategy to prevent TypeError index breaks
+p_age_val = patient_info[0] if (patient_info and patient_info[0] is not None) else 25
+
+
+# 2. Billing Split Fallback Fix (Section 6)
+if not unbilled_df.empty:
+    unbilled_df["display_select"] = unbilled_df["patient_name"] + " — " + unbilled_df["doctor"]
+    selected_record = st.selectbox("Select Pending Patient:", unbilled_df["display_select"].tolist())
+    
+    # Safe splitting fallback logic array
+    split_data = selected_record.split(" — ")
+    chosen_patient = split_data[0] if len(split_data) > 0 else "Unknown Patient"
+    chosen_doctor = split_data[1] if len(split_data) > 1 else "Unknown Doctor"
