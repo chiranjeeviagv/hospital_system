@@ -484,7 +484,9 @@ else:
 
                 conn.commit()
                 conn.close()
-
+                st.session_state["pdf_ready_patient"] = selected_patient
+                st.session_state["pdf_data"] = (selected_patient, selected_dept, chosen_disease, chosen_symptom, final_prescription, clinical_notes)
+                st.rerun()
                 # Inside the Doctor Dashboard case logging blocks:
             if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
                 p_name, d_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_data"]
