@@ -89,7 +89,8 @@ DOCTOR_FEE_SCHEDULE = {
 # ==========================================
 
 def init_db():
-    conn = sqlite3.connect("hospital.db")
+    conn = sqlite3.connect("hospital_v2.db" \
+    "")
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -342,7 +343,7 @@ else:
                 if patient_name.strip() == "":
                     st.error("Please enter a valid patient name.")
                 else:
-                    conn = sqlite3.connect("hospital.db")
+                    conn = sqlite3.connect("hospital_v2.db"
                     cursor = conn.cursor()
                     cursor.execute(
                         "INSERT INTO appointments (patient_name, patient_age, patient_gender, patient_contact, patient_problem, doctor, appt_date, appt_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -354,7 +355,7 @@ else:
                     
         st.markdown("---")
         st.subheader("📋 Active Registered Requests")
-        conn = sqlite3.connect("hospital.db")
+        conn = sqlite3.connect("hospital_v2.db")
         df = pd.read_sql_query("SELECT id AS ID, patient_name AS [Patient Name], doctor AS Doctor, appt_date AS [Scheduled Date], appt_time AS [Time Slot], status AS Status FROM appointments", conn)
         conn.close()
         st.dataframe(df, use_container_width=True, hide_index=True)
@@ -365,7 +366,7 @@ else:
         st.subheader("1. Active Operational Schedule")
         selected_dept = st.selectbox("Filter Schedule by Specialist / Department:", ["All Departments"] + SPECIALTY_DOCTORS)
         
-        conn = sqlite3.connect("hospital.db")
+        conn = sqlite3.connect("hospital_v2.db")
         df = pd.read_sql_query("SELECT id AS ID, patient_name AS [Patient Name], doctor AS Doctor, appt_date AS [Date], appt_time AS [Slot], status AS Status FROM appointments", conn)
         conn.close()
         
@@ -383,7 +384,7 @@ else:
             )
             
             if st.button("💾 Save Schedule Status Updates", type="secondary"):
-                conn = sqlite3.connect("hospital.db")
+                conn = sqlite3.connect("hospital_v2.db")
                 cursor = conn.cursor()
                 for index, row in edited_df.iterrows():
                     cursor.execute("UPDATE appointments SET status = ? WHERE id = ?", (row["Status"], int(row["ID"])))
@@ -398,7 +399,7 @@ else:
             selected_patient = st.selectbox("Select Patient to Diagnose:", patient_list)
             
             # --- DATABASE QUERIES & FALLBACKS ---
-            conn = sqlite3.connect("hospital.db")
+            conn = sqlite3.connect("hospital_v2.db")
             cursor = conn.cursor()
             
             # Safely fetch patient age using the cursor
@@ -440,7 +441,7 @@ else:
                 log_submitted = st.button("🚀 Log & Finalize Case", type="primary")
                 
             if log_submitted:
-                conn = sqlite3.connect("hospital.db")
+                conn = sqlite3.connect("hospital_v2.db")
                 cursor = conn.cursor()
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
                 
@@ -504,7 +505,7 @@ else:
     elif user_role == "Pharmacy Inventory":
         st.title("📦 Medical Dispensary & Pharmacy Stock Management")
         
-        conn = sqlite3.connect("hospital.db")
+        conn = sqlite3.connect("hospital_v2.db")
         df_inv = pd.read_sql_query("SELECT id AS ID, medicine_name AS [Medicine Name], category AS [Therapeutic Class], stock_qty AS [Current Stock Units], min_required AS [Safety Threshold Limit] FROM inventory", conn)
         conn.close()
         
@@ -524,7 +525,7 @@ else:
         edited_inv = st.data_editor(df_inv, disabled=["ID", "Medicine Name", "Therapeutic Class"], use_container_width=True, hide_index=True, key="inventory_editor")
         
         if st.button("💾 Apply & Update Inventory Balances", type="primary"):
-            conn = sqlite3.connect("hospital.db")
+            conn = sqlite3.connect("hospital_v2.db")
             cursor = conn.cursor()
             for index, row in edited_inv.iterrows():
                 cursor.execute("UPDATE inventory SET stock_qty = ?, min_required = ? WHERE id = ?", (int(row["Current Stock Units"]), int(row["Safety Threshold Limit"]), int(row["ID"])))
@@ -537,7 +538,7 @@ else:
     elif user_role == "Billing Dashboard":
         st.title("💰 Patient Checkouts & Invoice Generator")
         
-        conn = sqlite3.connect("hospital.db")
+        conn = sqlite3.connect("hospital_v2.db")
         query = """
             SELECT DISTINCT a.patient_name, a.doctor 
             FROM appointments a
@@ -570,7 +571,7 @@ else:
                 pay_method = st.selectbox("Payment Method:", ["Cash", "UPI / QR Scanner", "Credit/Debit Card", "Insurance Claim"])
                 
                 if st.button("🚀 Process Payment & Issue Invoice", type="primary"):
-                    conn = sqlite3.connect("hospital.db")
+                    conn = sqlite3.connect("hospital_v2.db")
                     cursor = conn.cursor()
                     current_date = datetime.now().strftime("%Y-%m-%d %H:%M")
                     
@@ -603,7 +604,7 @@ else:
 
         with col_bill_log:
             st.subheader("📜 Historical Financial Transaction Logs")
-            conn = sqlite3.connect("hospital.db")
+            conn = sqlite3.connect("hospital_v2.db")
             billing_history_df = pd.read_sql_query("SELECT id AS [Inv ID], patient_name AS [Patient Name], grand_total AS [Total Paid], payment_status AS [Status], billing_date AS [Date] FROM billing ORDER BY id DESC", conn)
             conn.close()
             if not billing_history_df.empty:
@@ -615,7 +616,7 @@ else:
                 # --- PAGE 5: ADMIN ANALYTICS (STYLED) ---
     elif user_role == "Admin Analytics":
         st.title("📊 Hospital Operational Control Panel")
-        conn = sqlite3.connect("hospital.db")
+        conn = sqlite3.connect("hospital_v2.db")
         df_app = pd.read_sql_query("SELECT * FROM appointments", conn)
         df_cons = pd.read_sql_query("SELECT * FROM consultations", conn)
         conn.close()
@@ -656,7 +657,7 @@ else:
             st.info("No disease data logged out via the Doctor Workspace yet.")
 
         st.title("📊 Hospital Operational Control Panel")
-        conn = sqlite3.connect("hospital.db")
+        conn = sqlite3.connect("hospital_v2.db")
         df_app = pd.read_sql_query("SELECT * FROM appointments", conn)
         df_cons = pd.read_sql_query("SELECT * FROM consultations", conn)
         conn.close()
