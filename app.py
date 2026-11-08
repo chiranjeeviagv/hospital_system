@@ -399,8 +399,11 @@ else:
             # --- CORRECTED CODE ---
             conn = sqlite3.connect("hospital.db")
             cursor = conn.cursor()  # <-- Add this cursor object
+           # --- CORRECTED WORKING CODE ---
             patient_info = cursor.execute("SELECT patient_age FROM appointments WHERE patient_name = ? LIMIT 1", (selected_patient,)).fetchone()
-            conn.close()
+
+# Safe index extraction checks
+            p_age_val = patient_info[0] if (patient_info and patient_info[0] is not None) else 25
 
             st.markdown("---")
             st.subheader("2. Real-time Patient Diagnostics & Prescription Module")
