@@ -396,9 +396,22 @@ else:
             patient_list = df["Patient Name"].unique().tolist()
             selected_patient = st.selectbox("Select Patient to Diagnose:", patient_list)
             
+            # --- CORRECTED CODE ---
             conn = sqlite3.connect("hospital.db")
-            patient_info = conn.execute("SELECT patient_age FROM appointments WHERE patient_name = ? LIMIT 1", (selected_patient,)).fetchone()
-            p_age_val = patient_info[0] if patient_info else 0
+            cursor = conn.cursor()  # <-- Add this cursor object
+            patient_info = cursor.execute("SELECT patient_age FROM appointments WHERE patient_name = ? LIMIT 1", (selected_patient,)).fetchone()
+            conn.close()
+
+            st.markdown("---")
+            st.subheader("2. Real-time Patient Diagnostics & Prescription Module")
+            patient_list = df["Patient Name"].unique().tolist()
+            selected_patient = st.selectbox("Select Patient to Diagnose:", patient_list)
+            
+            # --- DATABASE QUERIES RESTORED HERE ---
+            conn = sqlite3.connect("hospital.db")
+            cursor = conn.cursor()
+            patient_info = cursor.execute("SELECT patient_age FROM appointments WHERE patient_name = ? LIMIT 1", (selected_patient,)).fetchone()
+            p_age_val = patient_info[0] if (patient_info and patient_info[0] is not None) else 25
             
             history_df = pd.read_sql_query("SELECT consultation_date AS [Date], symptoms AS [Symptoms], diagnosed_disease AS [Diagnosis], prescription AS [Prescription Summary], notes AS [Doctor Notes] FROM consultations WHERE patient_name = ?", conn, params=(selected_patient,))
             conn.close()
@@ -409,7 +422,8 @@ else:
                 st.dataframe(history_df, use_container_width=True, hide_index=True)
             else:
                 st.info("🆕 Fresh Registration: No historical entries found.")
-                
+
+
             st.markdown("---")
             st.markdown(f"##### ✍️ Create New Clinical Entry for {selected_patient}")
             col_diag, col_presc = st.columns(2)
