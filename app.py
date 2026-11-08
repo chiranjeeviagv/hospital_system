@@ -410,9 +410,12 @@ else:
             # --- DATABASE QUERIES RESTORED HERE ---
             conn = sqlite3.connect("hospital.db")
             cursor = conn.cursor()
+           # --- CORRECTED WORKING CODE ---
             patient_info = cursor.execute("SELECT patient_age FROM appointments WHERE patient_name = ? LIMIT 1", (selected_patient,)).fetchone()
+
+# Safe index extraction checks
             p_age_val = patient_info[0] if (patient_info and patient_info[0] is not None) else 25
-            
+ 
             history_df = pd.read_sql_query("SELECT consultation_date AS [Date], symptoms AS [Symptoms], diagnosed_disease AS [Diagnosis], prescription AS [Prescription Summary], notes AS [Doctor Notes] FROM consultations WHERE patient_name = ?", conn, params=(selected_patient,))
             conn.close()
             
