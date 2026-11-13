@@ -548,8 +548,8 @@ else:
         if target_medicine:
                         cursor.execute("UPDATE inventory SET stock_qty = MAX(0, stock_qty - 1) WHERE medicine_name = ?", (target_medicine,))
 
-                    conn.commit()
-                    conn.close()
+         conn.commit()
+         conn.close()
                     st.session_state["pdf_ready_patient"] = selected_patient
                     st.session_state["pdf_data"] = (selected_patient, assigned_doc, chosen_disease, chosen_symptom, final_prescription, clinical_notes)
                     st.rerun()
