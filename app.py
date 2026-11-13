@@ -520,7 +520,7 @@ else:
                     )
             cursor.execute("UPDATE appointments SET status = 'Completed' WHERE patient_name = ?", (selected_patient,))
                  
-        medicine_keywords = {
+                    medicine_keywords = {
                         "Viral Influenza": "Paracetamol 650mg",
                         "Malaria Parasitism": "Artemether-Lumefantrine",
                         "Acute Bronchitis": "Dextromethorphan Syr.",
@@ -544,30 +544,19 @@ else:
                         "Primary Insomnia": "Melatonin 5mg"
                     }
 
-        target_medicine = medicine_keywords.get(chosen_disease)
-        if target_medicine:
+                    target_medicine = medicine_keywords.get(chosen_disease)
+                    if target_medicine:
                         cursor.execute("UPDATE inventory SET stock_qty = MAX(0, stock_qty - 1) WHERE medicine_name = ?", (target_medicine,))
 
-         conn.commit()
-         conn.close()
+                    conn.commit()
+                    conn.close()
                     st.session_state["pdf_ready_patient"] = selected_patient
                     st.session_state["pdf_data"] = (selected_patient, assigned_doc, chosen_disease, chosen_symptom, final_prescription, clinical_notes)
                     st.rerun()
 
-                    if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
+                if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
                     p_name, d_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_data"]
                     pdf_bytes = build_prescription_pdf(p_name, d_name, p_dis, p_sym, p_rx, p_note)
-                    # Inside build_prescription_pdf:
-                    story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", title_style))
-
-                     # Inside build_invoice_pdf:
-                     story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
-                     story.append(Spacer(1, 30))
-                     story.append(Paragraph("<i>This is a computer-generated transaction record voucher. No physical signature is required.</i>", footer_style))
-                      doc.build(story)
-                 buffer.seek(0)
-                return buffer.getvalue()
-
                     st.markdown("---")
                     st.success("📄 Medical Prescription Document Compiled Successfully!")
                     st.download_button(
@@ -578,6 +567,7 @@ else:
                     )
         else:
             st.info("No active appointments registered for this selection.")
+
     # --- PAGE 3: PHARMACY INVENTORY ---
     elif user_role == "Pharmacy Inventory":
         render_hero("📦 Medical Dispensary & Pharmacy Stock", "Monitor formulation stock levels, reorder alerts, and live inventory updates.")
@@ -599,7 +589,6 @@ else:
         st.markdown("---")
         st.subheader("Live Inventory Editor")
         edited_inv = st.data_editor(df_inv, disabled=["ID", "Medicine Name", "Therapeutic Class"], use_container_width=True, hide_index=True, key="inventory_editor")
-
         if st.button("💾 Apply & Update Inventory Balances", type="primary"):
             conn = sqlite3.connect("hospital_v2.db")
             cursor = conn.cursor()
