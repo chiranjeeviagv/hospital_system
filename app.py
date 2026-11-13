@@ -313,10 +313,7 @@ else:
     # --- PAGE 1: PATIENT PORTAL ---
     if user_role == "Patient Portal":
        render_hero("🏥 Patient Health Management System", "Book specialist consultations and track real-time appointment approvals.")
-
-        
         col_left, col_right = st.columns([1.1, 1], gap="large")
-        
         with col_left:
             st.subheader("🗓️ Book an Appointment")
             with st.form("appointment_form", clear_on_submit=True):
