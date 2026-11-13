@@ -8,6 +8,11 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
+tab1, tab2 = st.tabs(["📅 Operational Schedule", "🩺 Patient Diagnostics & Rx"])
+with tab1:
+    # ... your existing st.data_editor schedule code ...
+with tab2:
+    # ... your existing patient history + prescription generator ...
 
 # ==========================================
 # 1. CORE DATA STRUCTURE ENGINE MAPS
