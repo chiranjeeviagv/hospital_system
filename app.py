@@ -520,7 +520,7 @@ else:
                     )
             cursor.execute("UPDATE appointments SET status = 'Completed' WHERE patient_name = ?", (selected_patient,))
                  
-                    medicine_keywords = {
+            medicine_keywords = {
                         "Viral Influenza": "Paracetamol 650mg",
                         "Malaria Parasitism": "Artemether-Lumefantrine",
                         "Acute Bronchitis": "Dextromethorphan Syr.",
