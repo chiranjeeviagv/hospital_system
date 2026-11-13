@@ -655,7 +655,7 @@ else:
             else:
                 st.info("✨ Clean Slate: No pending unbilled patient checkouts found.")
 
-           if "invoice_ready_id" in st.session_state:
+                if "invoice_ready_id" in st.session_state:
                 i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str = st.session_state["invoice_pdf_data"]
                 inv_bytes = build_invoice_pdf(i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str)
                 st.markdown("---")
