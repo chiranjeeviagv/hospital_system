@@ -507,7 +507,7 @@ else:
                     clinical_notes = st.text_input("Additional Case Notes:", placeholder="e.g. Bedrest for 3 days")
                     
                 log_submitted = st.button("🚀 Log & Finalize Case", type="primary")
-                        if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
+                if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
                     p_name, d_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_data"]
                     pdf_bytes = build_prescription_pdf(p_name, d_name, p_dis, p_sym, p_rx, p_note)
                     st.markdown("---")
