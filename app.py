@@ -520,7 +520,7 @@ else:
                     )
             cursor.execute("UPDATE appointments SET status = 'Completed' WHERE patient_name = ?", (selected_patient,))
                  
-            medicine_keywords = {
+        medicine_keywords = {
                         "Viral Influenza": "Paracetamol 650mg",
                         "Malaria Parasitism": "Artemether-Lumefantrine",
                         "Acute Bronchitis": "Dextromethorphan Syr.",
@@ -544,7 +544,7 @@ else:
                         "Primary Insomnia": "Melatonin 5mg"
                     }
 
-                    target_medicine = medicine_keywords.get(chosen_disease)
+        target_medicine = medicine_keywords.get(chosen_disease)
                     if target_medicine:
                         cursor.execute("UPDATE inventory SET stock_qty = MAX(0, stock_qty - 1) WHERE medicine_name = ?", (target_medicine,))
 
