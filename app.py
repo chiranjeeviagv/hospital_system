@@ -401,6 +401,14 @@ else:
     </div>
 """, unsafe_allow_html=True)
      st.title("🗓️ Patient Appointment Booking")
+col_left, col_right = st.columns([1.1, 1], gap="large")
+with col_left:
+    with st.form("appointment_form", clear_on_submit=True):
+        # ... your existing form fields ...
+with col_right:
+    st.subheader("📋 Active Registered Requests")
+    # ... your existing dataframe ...
+
 st.markdown("""
     <div class="hero-banner">
         <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
