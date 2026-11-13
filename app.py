@@ -521,17 +521,18 @@ else:
                     clinical_notes = st.text_input("Additional Case Notes:", placeholder="e.g. Bedrest for 3 days")
                     
                 log_submitted = st.button("🚀 Log & Finalize Case", type="primary")
-                    
-                if log_submitted:
-                    conn = sqlite3.connect("hospital_v2.db")
-                    cursor = conn.cursor()
-                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-                    
-                    cursor.execute(
-                        'INSERT INTO consultations (patient_name, patient_age, symptoms, diagnosed_disease, prescription, notes, consultation_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                        (selected_patient, p_age_val, chosen_symptom, chosen_disease, final_prescription, clinical_notes, current_time)
+                        if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
+                    p_name, d_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_data"]
+                    pdf_bytes = build_prescription_pdf(p_name, d_name, p_dis, p_sym, p_rx, p_note)
+                    st.markdown("---")
+                    st.success("📄 Medical Prescription Document Compiled Successfully!")
+                    st.download_button(
+                        label="📥 Download Printed PDF Prescription",
+                        data=pdf_bytes,
+                        file_name=f"Prescription_{p_name.replace(' ', '_')}.pdf",
+                        mime="application/pdf"
                     )
-                    cursor.execute("UPDATE appointments SET status = 'Completed' WHERE patient_name = ?", (selected_patient,))
+            cursor.execute("UPDATE appointments SET status = 'Completed' WHERE patient_name = ?", (selected_patient,))
                     
                     medicine_keywords = {
                         "Viral Influenza": "Paracetamol 650mg",
