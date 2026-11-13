@@ -334,19 +334,7 @@ def build_invoice_pdf(invoice_id, name, doctor, base_fee, tax, total, status, da
     return buffer.getvalue()
 
     story = []
-    story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
-    story.append(Paragraph("123 Health Boulevard, Wellness District | Support: +91 99999 88888", brand_sub))
-    
-    story.append(Paragraph("<b>PATIENT INVOICE RECEIPT</b>", inv_title))
-    story.append(Paragraph(f"<b>Invoice ID:</b> #LL-2026-{invoice_id}", meta_style))
-    story.append(Paragraph(f"<b>Date/Time:</b> {date_str}", meta_style))
-    story.append(Paragraph(f"<b>Patient Name:</b> {name}", meta_style))
-    story.append(Paragraph(f"<b>Attending Clinician:</b> {doctor}", meta_style))
-    story.append(Spacer(1, 15))
-    story.append(Paragraph("<hr/>", meta_style))
-    story.append(Spacer(1, 10))
-    
-    story.append(Paragraph("<b>Itemised Description charges:</b>", meta_style))
+        story.append(Paragraph("<b>Itemised Description charges:</b>", meta_style))
     story.append(Spacer(1, 5))
     story.append(Paragraph(f"• Clinical Consultation Services Base Fee: <b>₹{base_fee:,.2f}</b>", table_label))
     story.append(Paragraph(f"• Central Medical Tax Services (18% GST): <b>₹{tax:,.2f}</b>", table_label))
@@ -356,18 +344,7 @@ def build_invoice_pdf(invoice_id, name, doctor, base_fee, tax, total, status, da
     
     story.append(Spacer(1, 30))
     story.append(Paragraph("<i>This is a computer-generated transaction record voucher. No physical signature is required.</i>", footer_style))
-                if "invoice_ready_id" in st.session_state:
-                i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str = st.session_state["invoice_pdf_data"]
-                inv_bytes = build_invoice_pdf(i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str)
-                st.markdown("---")
-                st.success("📄 Invoice Receipt PDF Compiled Successfully!")
-                st.download_button(
-                    label="📥 Download Printed Billing Receipt",
-                    data=inv_bytes,
-                    file_name=f"Invoice_{i_id}_{p_name.replace(' ', '_')}.pdf",
-                    mime="application/pdf"
-                )
-
+    
     doc.build(story)
     buffer.seek(0)
     return buffer.getvalue()
