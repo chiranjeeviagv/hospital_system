@@ -544,17 +544,17 @@ else:
                         "Primary Insomnia": "Melatonin 5mg"
                     }
 
-                    target_medicine = medicine_keywords.get(chosen_disease)
-                    if target_medicine:
-                        cursor.execute("UPDATE inventory SET stock_qty = MAX(0, stock_qty - 1) WHERE medicine_name = ?", (target_medicine,))
+            target_medicine = medicine_keywords.get(chosen_disease)
+            if target_medicine:
+            cursor.execute("UPDATE inventory SET stock_qty = MAX(0, stock_qty - 1) WHERE medicine_name = ?", (target_medicine,))
 
-                    conn.commit()
-                    conn.close()
-                    st.session_state["pdf_ready_patient"] = selected_patient
-                    st.session_state["pdf_data"] = (selected_patient, assigned_doc, chosen_disease, chosen_symptom, final_prescription, clinical_notes)
-                    st.rerun()
+            conn.commit()
+            conn.close()
+            st.session_state["pdf_ready_patient"] = selected_patient
+            st.session_state["pdf_data"] = (selected_patient, assigned_doc, chosen_disease, chosen_symptom, final_prescription, clinical_notes)
+            st.rerun()
 
-                if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
+            if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
                     p_name, d_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_data"]
                     pdf_bytes = build_prescription_pdf(p_name, d_name, p_dis, p_sym, p_rx, p_note)
                     st.markdown("---")
