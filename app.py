@@ -323,7 +323,13 @@ def build_invoice_pdf(invoice_id, name, doctor, base_fee, tax, total, status, da
     table_label = ParagraphStyle('TblLabel', parent=styles['Normal'], fontSize=11, leading=16)
     total_style = ParagraphStyle('TblTotal', parent=styles['Heading3'], textColor='#17b978', fontSize=12, leading=16)
     footer_style = ParagraphStyle('InvFoot', parent=styles['Normal'], alignment=TA_CENTER, textColor='#888888', fontSize=8, spaceBefore=40)
+        story.append(Spacer(1, 30))
+    story.append(Paragraph("<i>This is a computer-generated transaction record voucher. No physical signature is required.</i>", footer_style))
     
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
     story = []
     story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
     story.append(Paragraph("123 Health Boulevard, Wellness District | Support: +91 99999 88888", brand_sub))
@@ -576,6 +582,11 @@ else:
 
                      # Inside build_invoice_pdf:
                      story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
+                     story.append(Spacer(1, 30))
+                     story.append(Paragraph("<i>This is a computer-generated transaction record voucher. No physical signature is required.</i>", footer_style))
+                      doc.build(story)
+                 buffer.seek(0)
+                return buffer.getvalue()
 
                     st.markdown("---")
                     st.success("📄 Medical Prescription Document Compiled Successfully!")
