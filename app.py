@@ -655,7 +655,7 @@ else:
             else:
                 st.info("✨ Clean Slate: No pending unbilled patient checkouts found.")
 
-            if "invoice_ready_id" in st.session_state:
+           if "invoice_ready_id" in st.session_state:
                 i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str = st.session_state["invoice_pdf_data"]
                 inv_bytes = build_invoice_pdf(i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str)
                 st.markdown("---")
@@ -666,18 +666,6 @@ else:
                     file_name=f"Invoice_{i_id}_{p_name.replace(' ', '_')}.pdf",
                     mime="application/pdf"
                 )
-
-# Inside build_invoice_pdf:
-story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
-
-        st.markdown("---")
-        st.success("📄 Invoice Receipt PDF Compiled Successfully!")
-        st.download_button(
-                    label="📥 Download Printed Billing Receipt",
-                    data=inv_bytes,
-                    file_name=f"Invoice_{i_id}_{p_name.replace(' ', '_')}.pdf",
-                    mime="application/pdf"
-        )
 
        with col_bill_log:
             st.subheader("📜 Historical Financial Transaction Logs")
