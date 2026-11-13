@@ -13,7 +13,8 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 # 0. PAGE CONFIG & CUSTOM UI STYLING
 # ==========================================
 
-st.set_page_config(page_title="Lifeline HMS Pro", page_icon="🏥", layout="wide")
+st.set_page_config(page_title="Patient Health Management System", page_icon="🏥", layout="wide")
+
 
 def apply_custom_ui():
     st.markdown(
@@ -476,6 +477,12 @@ else:
                 if "pdf_ready_patient" in st.session_state and st.session_state["pdf_ready_patient"] == selected_patient:
                     p_name, d_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_data"]
                     pdf_bytes = build_prescription_pdf(p_name, d_name, p_dis, p_sym, p_rx, p_note)
+                    # Inside build_prescription_pdf:
+story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", title_style))
+
+# Inside build_invoice_pdf:
+story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
+
                     st.markdown("---")
                     st.success("📄 Medical Prescription Document Compiled Successfully!")
                     st.download_button(
@@ -577,6 +584,12 @@ else:
             if "invoice_ready_id" in st.session_state:
                 i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str = st.session_state["invoice_pdf_data"]
                 inv_bytes = build_invoice_pdf(i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str)
+                # Inside build_prescription_pdf:
+story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", title_style))
+
+# Inside build_invoice_pdf:
+story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
+
                 st.markdown("---")
                 st.success("📄 Invoice Receipt PDF Compiled Successfully!")
                 st.download_button(
