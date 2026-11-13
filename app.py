@@ -312,7 +312,8 @@ if not authenticated:
 else:
     # --- PAGE 1: PATIENT PORTAL ---
     if user_role == "Patient Portal":
-        render_hero("🏥 Lifeline HMS Pro — Patient Portal", "Book specialist consultations and track real-time appointment approvals.")
+       render_hero("🏥 Patient Health Management System", "Book specialist consultations and track real-time appointment approvals.")
+
         
         col_left, col_right = st.columns([1.1, 1], gap="large")
         
@@ -478,10 +479,10 @@ else:
                     p_name, d_name, p_dis, p_sym, p_rx, p_note = st.session_state["pdf_data"]
                     pdf_bytes = build_prescription_pdf(p_name, d_name, p_dis, p_sym, p_rx, p_note)
                     # Inside build_prescription_pdf:
-story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", title_style))
+                    story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", title_style))
 
-# Inside build_invoice_pdf:
-story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
+                     # Inside build_invoice_pdf:
+                     story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
 
                     st.markdown("---")
                     st.success("📄 Medical Prescription Document Compiled Successfully!")
