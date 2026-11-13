@@ -382,13 +382,32 @@ else:
 # ==========================================
 
 if not authenticated:
-    st.title("🔒 Restricted Clinical Access Area")
+    st.markdown("""
+    <div class="hero-banner">
+        <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
+        <p>Book specialist consultations and track real-time appointment approvals.</p>
+    </div>
+""", unsafe_allow_html=True)
+
     st.warning("Please provide the correct credentials in the sidebar to unlock this dashboard view.")
     st.info("💡 Hint: Use doctor123, pharma123, billing123, or admin123 based on selection.")
 else:
     # --- PAGE 1: PATIENT PORTAL ---
     if user_role == "Patient Portal":
-        st.title("🗓️ Patient Appointment Booking")
+        st.markdown("""
+    <div class="hero-banner">
+        <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
+        <p>Book specialist consultations and track real-time appointment approvals.</p>
+    </div>
+""", unsafe_allow_html=True)
+     st.title("🗓️ Patient Appointment Booking")
+st.markdown("""
+    <div class="hero-banner">
+        <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
+        <p>Book specialist consultations and track real-time appointment approvals.</p>
+    </div>
+""", unsafe_allow_html=True)
+
         st.write("Fill out the interactive form below to book a clinical slot.")
         with st.form("appointment_form", clear_on_submit=True):
             st.subheader("Enter Booking Details")
@@ -428,7 +447,21 @@ else:
 
     # --- PAGE 2: DOCTOR DASHBOARD ---
     elif user_role == "Doctor Dashboard":
+st.markdown("""
+    <div class="hero-banner">
+        <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
+        <p>Book specialist consultations and track real-time appointment approvals.</p>
+    </div>
+""", unsafe_allow_html=True)
+
         st.title("🩺 Medical Practitioner Workspace")
+st.markdown("""
+    <div class="hero-banner">
+        <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
+        <p>Book specialist consultations and track real-time appointment approvals.</p>
+    </div>
+""", unsafe_allow_html=True)
+
         st.subheader("1. Active Operational Schedule")
         selected_dept = st.selectbox("Filter Schedule by Specialist / Department:", ["All Departments"] + SPECIALTY_DOCTORS)
         
@@ -567,7 +600,21 @@ else:
 
     # --- PAGE 3: PHARMACY INVENTORY ---
     elif user_role == "Pharmacy Inventory":
+st.markdown("""
+    <div class="hero-banner">
+        <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
+        <p>Book specialist consultations and track real-time appointment approvals.</p>
+    </div>
+""", unsafe_allow_html=True)
+
         st.title("📦 Medical Dispensary & Pharmacy Stock Management")
+st.markdown("""
+    <div class="hero-banner">
+        <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
+        <p>Book specialist consultations and track real-time appointment approvals.</p>
+    </div>
+""", unsafe_allow_html=True)
+
         conn = sqlite3.connect("hospital_v2.db")
         df_inv = pd.read_sql_query("SELECT id AS ID, medicine_name AS [Medicine Name], category AS [Therapeutic Class], stock_qty AS [Current Stock Units], min_required AS [Safety Threshold Limit] FROM inventory", conn)
         conn.close()
@@ -598,6 +645,12 @@ else:
 
     # --- PAGE 4: BILLING DASHBOARD ---
     elif user_role == "Billing Dashboard":
+        st.markdown("""
+    <div class="hero-banner">
+        <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
+        <p>Book specialist consultations and track real-time appointment approvals.</p>
+    </div>
+""", unsafe_allow_html=True)
         st.title("💰 Patient Checkouts & Invoice Generator")
         
         conn = sqlite3.connect("hospital_v2.db")
@@ -676,6 +729,19 @@ else:
 
     # --- PAGE 5: ADMIN ANALYTICS ---
     elif user_role == "Admin Analytics":
+        st.markdown("""
+    <div class="hero-banner">
+        <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
+        <p>Book specialist consultations and track real-time appointment approvals.</p>
+    </div>
+""", unsafe_allow_html=True)
+st.markdown("""
+    <div class="hero-banner">
+        <h1>🏥 Lifeline HMS Pro — Patient Portal</h1>
+        <p>Book specialist consultations and track real-time appointment approvals.</p>
+    </div>
+""", unsafe_allow_html=True)
+
         st.title("📊 Hospital Operational Control Panel")
         conn = sqlite3.connect("hospital_v2.db")
         df_app = pd.read_sql_query("SELECT * FROM appointments", conn)
