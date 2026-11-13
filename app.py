@@ -270,6 +270,100 @@ def init_db():
 
 init_db()
 # ==========================================
+# 3. PDF GENERATION UTILITIES
+# ==========================================
+
+def build_prescription_pdf(name, doctor, disease, symptoms, Rx, notes):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], alignment=TA_CENTER, textColor='#1e3d59', fontSize=24, spaceAfter=6)
+    sub_style = ParagraphStyle('DocSub', parent=styles['Normal'], alignment=TA_CENTER, textColor='#17b978', fontSize=10, spaceAfter=20)
+    meta_style = ParagraphStyle('DocMeta', parent=styles['Normal'], fontSize=11, leading=16, spaceAfter=8)
+    section_title = ParagraphStyle('SecTitle', parent=styles['Heading3'], textColor='#1e3d59', fontSize=14, spaceBefore=12, spaceAfter=6)
+    body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontSize=11, leading=16, leftIndent=10)
+    
+    story = []
+    story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", title_style))
+    story.append(Paragraph("E-Health Portal Automated Prescription Record System", sub_style))
+    story.append(Paragraph(f"<b>Date:</b> {datetime.now().strftime('%Y-%m-%d %H:%M')}", meta_style))
+    story.append(Paragraph(f"<b>Patient Name:</b> {name}", meta_style))
+    story.append(Paragraph(f"<b>Attending Doctor:</b> {doctor}", meta_style)) 
+    story.append(Spacer(1, 10))
+    
+    story.append(Paragraph("Clinical Diagnostics Summary", section_title))
+    story.append(Paragraph(f"<b>Presenting Symptoms:</b> {symptoms}", body_style))
+    story.append(Paragraph(f"<b>Inferred Final Diagnosis:</b> {disease}", body_style))
+    story.append(Spacer(1, 10))
+    
+    story.append(Paragraph("💊 Prescribed Medications (Rx Options)", section_title))
+    story.append(Paragraph(Rx.replace('\n', '<br/>'), body_style))
+    story.append(Spacer(1, 10))
+    
+    story.append(Paragraph("📝 Lifestyle Advice & Clinical Notes", section_title))
+    story.append(Paragraph(notes if notes else "No additional restrictions specified.", body_style))
+    story.append(Spacer(1, 40))
+    
+    story.append(Paragraph(f"Authorized Signature: <b>{doctor}</b> (Digitally Validated)", ParagraphStyle('Sign', parent=styles['Normal'], alignment=TA_LEFT, fontSize=9)))
+    
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+def build_invoice_pdf(invoice_id, name, doctor, base_fee, tax, total, status, date_str):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=50, leftMargin=50, topMargin=50, bottomMargin=50)
+    styles = getSampleStyleSheet()
+    
+    brand_title = ParagraphStyle('InvBrand', parent=styles['Heading1'], alignment=TA_CENTER, textColor='#1e3d59', fontSize=22, spaceAfter=4)
+    brand_sub = ParagraphStyle('InvSub', parent=styles['Normal'], alignment=TA_CENTER, textColor='#777777', fontSize=9, spaceAfter=25)
+    inv_title = ParagraphStyle('InvTitle', parent=styles['Heading2'], textColor='#1e3d59', fontSize=14, spaceAfter=15)
+    meta_style = ParagraphStyle('InvMeta', parent=styles['Normal'], fontSize=10, leading=14, spaceAfter=6)
+    table_label = ParagraphStyle('TblLabel', parent=styles['Normal'], fontSize=11, leading=16)
+    total_style = ParagraphStyle('TblTotal', parent=styles['Heading3'], textColor='#17b978', fontSize=12, leading=16)
+    footer_style = ParagraphStyle('InvFoot', parent=styles['Normal'], alignment=TA_CENTER, textColor='#888888', fontSize=8, spaceBefore=40)
+    
+    story = []
+    story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
+    story.append(Paragraph("123 Health Boulevard, Wellness District | Support: +91 99999 88888", brand_sub))
+    
+    story.append(Paragraph("<b>PATIENT INVOICE RECEIPT</b>", inv_title))
+    story.append(Paragraph(f"<b>Invoice ID:</b> #LL-2026-{invoice_id}", meta_style))
+    story.append(Paragraph(f"<b>Date/Time:</b> {date_str}", meta_style))
+    story.append(Paragraph(f"<b>Patient Name:</b> {name}", meta_style))
+    story.append(Paragraph(f"<b>Attending Clinician:</b> {doctor}", meta_style))
+    story.append(Spacer(1, 15))
+    story.append(Paragraph("<hr/>", meta_style))
+    story.append(Spacer(1, 10))
+    
+    story.append(Paragraph("<b>Itemised Description charges:</b>", meta_style))
+    story.append(Spacer(1, 5))
+    story.append(Paragraph(f"• Clinical Consultation Services Base Fee: <b>₹{base_fee:,.2f}</b>", table_label))
+    story.append(Paragraph(f"• Central Medical Tax Services (18% GST): <b>₹{tax:,.2f}</b>", table_label))
+    story.append(Spacer(1, 10))
+    story.append(Paragraph(f"<b>Grand Total Amount Settled: ₹{total:,.2f}</b>", total_style))
+    story.append(Paragraph(f"<b>Transaction Status:</b> <font color='#17b978'><b>{status}</b></font>", table_label))
+    
+    story.append(Spacer(1, 30))
+    story.append(Paragraph("<i>This is a computer-generated transaction record voucher. No physical signature is required.</i>", footer_style))
+                if "invoice_ready_id" in st.session_state:
+                i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str = st.session_state["invoice_pdf_data"]
+                inv_bytes = build_invoice_pdf(i_id, p_name, d_name, b_fee, t_amt, g_tot, p_stat, d_str)
+                st.markdown("---")
+                st.success("📄 Invoice Receipt PDF Compiled Successfully!")
+                st.download_button(
+                    label="📥 Download Printed Billing Receipt",
+                    data=inv_bytes,
+                    file_name=f"Invoice_{i_id}_{p_name.replace(' ', '_')}.pdf",
+                    mime="application/pdf"
+                )
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+# ==========================================
 # 4. SECURE SIDEBAR NAVIGATION ENGINE
 # ==========================================
 
@@ -311,8 +405,9 @@ if not authenticated:
     st.info("💡 Hint: Use doctor123, pharma123, billing123, or admin123 based on selection.")
 else:
     # --- PAGE 1: PATIENT PORTAL ---
+        # --- PAGE 1: PATIENT PORTAL ---
     if user_role == "Patient Portal":
-       render_hero("🏥 Patient Health Management System", "Book specialist consultations and track real-time appointment approvals.")
+        render_hero("🏥 Patient Health Management System", "Book specialist consultations and track real-time appointment approvals.")
         col_left, col_right = st.columns([1.1, 1], gap="large")
         with col_left:
             st.subheader("🗓️ Book an Appointment")
