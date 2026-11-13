@@ -285,7 +285,70 @@ def build_invoice_pdf(invoice_id, name, doctor, base_fee, tax, total, status, da
 # ==========================================
 
 st.set_page_config(page_title="Lifeline HMS Pro", page_icon="🏥", layout="wide")
+
 st.sidebar.title("Good Health Clinical Management System")
+def apply_custom_ui():
+    st.markdown(
+        """
+        <style>
+        /* 1. Background Graphic: Soft Clinical Gradient + Subtle Medical Cross/Wave SVG */
+        .stApp {
+            background-color: #f0f4f8;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(23, 185, 120, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(30, 61, 89, 0.12) 0px, transparent 50%),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://w3.org fill='none' fill-rule='evenodd'%3E%3Cg fill='%231e3d59' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            background-attachment: fixed;
+        }
+
+        /* 2. Frosted Glass Card Containers for Forms, Dataframes, and Metrics */
+        [data-testid="stForm"], [data-testid="stDataFrame"], [data-testid="stMetric"] {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 18px;
+            border: 1px solid rgba(30, 61, 89, 0.12);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        /* 3. Sidebar Styling */
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #1e3d59 0%, #162e44 100%);
+        }
+        [data-testid="stSidebar"] * {
+            color: #ffffff !important;
+        }
+        [data-testid="stSidebar"] input {
+            color: #1e3d59 !important;
+        }
+
+        /* 4. Custom Hero Banner */
+        .hero-banner {
+            background: linear-gradient(135deg, #1e3d59 0%, #17b978 100%);
+            padding: 24px 30px;
+            border-radius: 14px;
+            color: white;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 20px rgba(30, 61, 89, 0.15);
+        }
+        .hero-banner h1 {
+            color: white !important;
+            margin: 0;
+            font-size: 2rem;
+        }
+        .hero-banner p {
+            color: rgba(255, 255, 255, 0.9);
+            margin: 6px 0 0 0;
+            font-size: 1rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# Call it right after st.set_page_config(...)
+apply_custom_ui()
+
 st.sidebar.markdown("---")
 
 user_role = st.sidebar.selectbox(
