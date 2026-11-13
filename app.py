@@ -326,7 +326,7 @@ def build_invoice_pdf(invoice_id, name, doctor, base_fee, tax, total, status, da
     table_label = ParagraphStyle('TblLabel', parent=styles['Normal'], fontSize=11, leading=16)
     total_style = ParagraphStyle('TblTotal', parent=styles['Heading3'], textColor='#17b978', fontSize=12, leading=16)
     footer_style = ParagraphStyle('InvFoot', parent=styles['Normal'], alignment=TA_CENTER, textColor='#888888', fontSize=8, spaceBefore=40)
-        story.append(Spacer(1, 30))
+    story.append(Spacer(1, 30))
     story.append(Paragraph("<i>This is a computer-generated transaction record voucher. No physical signature is required.</i>", footer_style))
     
     doc.build(story)
@@ -334,7 +334,7 @@ def build_invoice_pdf(invoice_id, name, doctor, base_fee, tax, total, status, da
     return buffer.getvalue()
 
     story = []
-        story.append(Paragraph("<b>Itemised Description charges:</b>", meta_style))
+    story.append(Paragraph("<b>Itemised Description charges:</b>", meta_style))
     story.append(Spacer(1, 5))
     story.append(Paragraph(f"• Clinical Consultation Services Base Fee: <b>₹{base_fee:,.2f}</b>", table_label))
     story.append(Paragraph(f"• Central Medical Tax Services (18% GST): <b>₹{tax:,.2f}</b>", table_label))
