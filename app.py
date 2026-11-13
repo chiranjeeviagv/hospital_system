@@ -670,16 +670,16 @@ else:
 # Inside build_invoice_pdf:
 story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
 
-                st.markdown("---")
-                st.success("📄 Invoice Receipt PDF Compiled Successfully!")
-                st.download_button(
+        st.markdown("---")
+        st.success("📄 Invoice Receipt PDF Compiled Successfully!")
+        st.download_button(
                     label="📥 Download Printed Billing Receipt",
                     data=inv_bytes,
                     file_name=f"Invoice_{i_id}_{p_name.replace(' ', '_')}.pdf",
                     mime="application/pdf"
-                )
+        )
 
-        with col_bill_log:
+       with col_bill_log:
             st.subheader("📜 Historical Financial Transaction Logs")
             conn = sqlite3.connect("hospital_v2.db")
             billing_history_df = pd.read_sql_query("SELECT id AS [Inv ID], patient_name AS [Patient Name], grand_total AS [Total Paid], payment_status AS [Status], billing_date AS [Date] FROM billing ORDER BY id DESC", conn)
@@ -689,13 +689,13 @@ story.append(Paragraph("🏥 PATIENT HEALTH MANAGEMENT SYSTEM", brand_title))
             else:
                 st.caption("No invoices issued yet today.")
     # --- PAGE 5: ADMIN ANALYTICS ---
-    elif user_role == "Admin Analytics":
-        render_hero("📊 Hospital Operational Control Panel", "Real-time clinical metrics, booking pipeline status, and disease incidence analytics.")
+        elif user_role == "Admin Analytics":
+            render_hero("📊 Hospital Operational Control Panel", "Real-time clinical metrics, booking pipeline status, and disease incidence analytics.")
         
-        conn = sqlite3.connect("hospital_v2.db")
-        df_app = pd.read_sql_query("SELECT * FROM appointments", conn)
-        df_cons = pd.read_sql_query("SELECT * FROM consultations", conn)
-        conn.close()
+            conn = sqlite3.connect("hospital_v2.db")
+            df_app = pd.read_sql_query("SELECT * FROM appointments", conn)
+            df_cons = pd.read_sql_query("SELECT * FROM consultations", conn)
+            conn.close()
         
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Patient Bookings", len(df_app))
