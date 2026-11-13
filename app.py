@@ -23,11 +23,14 @@ def apply_custom_ui():
         /* 1. Background Graphic: Soft Clinical Gradient + Subtle Medical Cross SVG */
         .stApp {
             background-color: #f0f4f8;
+        .stApp {
+            background-color: #f0f4f8;
             background-image: 
                 radial-gradient(at 0% 0%, rgba(23, 185, 120, 0.14) 0px, transparent 50%),
                 radial-gradient(at 100% 100%, rgba(30, 61, 89, 0.14) 0px, transparent 50%),
                 url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://w3.org fill='none' fill-rule='evenodd'%3E%3Cg fill='%231e3d59' fill-opacity='0.045'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
             background-attachment: fixed;
+        }
         }
 
         /* 2. Frosted Glass Card Containers for Forms, Dataframes, and Metrics */
