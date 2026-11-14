@@ -817,7 +817,7 @@ else:
 
                     target_medicine = DISEASE_TO_MEDICINE_MAP.get(chosen_disease, "None")
                     med_price = 0.0
-                   if target_medicine != "None":
+                    if target_medicine != "None":
                         price_row = cursor.execute("SELECT unit_price FROM inventory WHERE medicine_name = ?", (target_medicine,)).fetchone()
                         if price_row:
                             (raw_price,) = price_row
@@ -852,6 +852,7 @@ else:
                     )
         else:
             st.info("No active appointments registered for this selection.")
+
     # --- PAGE 3: PHARMACY INVENTORY ---
     elif user_role == "Pharmacy Inventory":
         render_hero("📦 Medical Dispensary & Pharmacy Stock", "Monitor formulation stock levels, unit pricing, reorder alerts, and live inventory updates.")
@@ -886,7 +887,6 @@ else:
             conn.close()
             st.success("Pharmacy inventory & pricing updates successfully committed!")
             st.rerun()
-
     # --- PAGE 4: BILLING DASHBOARD ---
     elif user_role == "Billing Dashboard":
         render_hero("💰 Patient Checkouts & Invoice Generator", "Process completed consultations with itemized pharmacy charges, GST, and downloadable PDF receipts.")
