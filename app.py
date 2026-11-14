@@ -19,7 +19,6 @@ def apply_custom_ui():
     st.markdown(
         """
         <style>
-        /* 1. Background Graphic: Soft Clinical Gradient + Subtle Medical Cross SVG */
         .stApp {
             background-color: #f0f4f8;
             background-image: 
@@ -28,8 +27,6 @@ def apply_custom_ui():
                 url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://w3.org fill='none' fill-rule='evenodd'%3E%3Cg fill='%231e3d59' fill-opacity='0.045'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
             background-attachment: fixed;
         }
-
-        /* 2. Frosted Glass Card Containers for Forms, Dataframes, and Metrics */
         [data-testid="stForm"], [data-testid="stDataFrame"], [data-testid="stMetric"] {
             background: rgba(255, 255, 255, 0.90);
             backdrop-filter: blur(10px);
@@ -38,8 +35,6 @@ def apply_custom_ui():
             border: 1px solid rgba(30, 61, 89, 0.12);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
         }
-
-        /* 3. Sidebar Styling */
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #1e3d59 0%, #162e44 100%);
         }
@@ -49,8 +44,6 @@ def apply_custom_ui():
         [data-testid="stSidebar"] input {
             color: #1e3d59 !important;
         }
-
-        /* 4. Custom Hero Banner */
         .hero-banner {
             background: linear-gradient(135deg, #1e3d59 0%, #17b978 100%);
             padding: 24px 30px;
@@ -112,6 +105,20 @@ SYMPTOM_VARIANTS = [
     "Persistent Low Mood, Fatigue & Loss of Interest",
     "Excessive Worry, Panic Attacks & Insomnia"
 ]
+
+SYMPTOM_TO_DOCTOR_MAP = {
+    "High Fever & Chills": "Dr. Sharma (General Medicine)",
+    "Chronic Cough & Shortness of Breath": "Dr. Sharma (General Medicine)",
+    "Severe Abdominal Pain & Acid Reflux": "Dr. Sharma (General Medicine)",
+    "Acute Joint Pain & Swelling": "Dr. Sharma (General Medicine)",
+    "Chest Pain & Palpitations": "Dr. Varma (Cardiology)",
+    "Severe Throbbing Headache & Aura": "Dr. Sen (Neurology)",
+    "Sudden Dizziness, Numbness & Seizure Episodes": "Dr. Sen (Neurology)",
+    "Blurred Vision, Eye Redness & Irritation": "Dr. Manish (Ophthalmology)",
+    "Gradual Vision Loss & Eye Pressure": "Dr. Manish (Ophthalmology)",
+    "Persistent Low Mood, Fatigue & Loss of Interest": "Dr. Radha (Psychiatry)",
+    "Excessive Worry, Panic Attacks & Insomnia": "Dr. Radha (Psychiatry)"
+}
 
 DISEASE_ENGINE = {
     "High Fever & Chills": ["Viral Influenza", "Malaria Parasitism"],
@@ -228,8 +235,8 @@ def init_db():
     
     cursor.execute("SELECT COUNT(*) FROM appointments")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO appointments (patient_name, doctor, appt_date, appt_time, status) VALUES ('Rama', 'Dr. Varma (Cardiology)', '2026-11-08', '10:00 AM', 'Confirmed')")
-        cursor.execute("INSERT INTO appointments (patient_name, doctor, appt_date, appt_time, status) VALUES ('Priya Patel', 'Dr. pradip (Pediatrics)', '2026-11-08', '02:30 PM', 'Pending')")
+        cursor.execute("INSERT INTO appointments (patient_name, patient_age, patient_problem, doctor, appt_date, appt_time, status) VALUES ('Rama', 45, '[Severity: Moderate | Duration: 1 - 3 days] Symptoms: Chest Pain & Palpitations.', 'Dr. Varma (Cardiology)', '2026-11-08', '10:00 AM', 'Confirmed')")
+        cursor.execute("INSERT INTO appointments (patient_name, patient_age, patient_problem, doctor, appt_date, appt_time, status) VALUES ('Priya Patel', 10, '[Severity: Mild | Duration: Less than 24 hours] Symptoms: High Fever & Chills.', 'Dr. pradip (Pediatrics)', '2026-11-08', '02:30 PM', 'Pending')")
 
     medicines = [
         ('Paracetamol 650mg', 'Analgesic / Antipyretic', 120, 30),
@@ -393,38 +400,94 @@ if not authenticated:
 else:
     # --- PAGE 1: PATIENT PORTAL ---
     if user_role == "Patient Portal":
-        render_hero("🏥 Patient Health Management System", "Book specialist consultations and track real-time appointment approvals.")
-        col_left, col_right = st.columns([1.1, 1], gap="large")
+        render_hero("🏥 Patient Health Management System", "Complete a quick symptom check to find the right specialist and book your visit.")
+        col_left, col_right = st.columns([1.2, 1], gap="large")
         
         with col_left:
-            st.subheader("🗓️ Book an Appointment")
+            # STEP 1: SYMPTOM ENQUIRY MODULE
+            st.subheader("🩺 Step 1: Pre-Appointment Symptom Enquiry")
+            with st.container(border=True):
+                col_age_check, col_sym_check = st.columns([1, 2])
+                with col_age_check:
+                    p_age = st.number_input("Patient Age", min_value=0, max_value=120, value=25)
+                with col_sym_check:
+                    selected_symptoms = st.multiselect(
+                        "Current Symptoms",
+                        options=SYMPTOM_VARIANTS,
+                        placeholder="Select one or more symptoms..."
+                    )
+                
+                col_s1, col_s2 = st.columns(2)
+                with col_s1:
+                    duration = st.selectbox("Symptom Duration", ["Less than 24 hours", "1 - 3 days", "4 - 7 days", "More than a week"])
+                with col_s2:
+                    severity = st.select_slider("Pain / Discomfort Severity", options=["Mild", "Moderate", "Severe"])
+                
+                additional_details = st.text_input("Additional Notes or Allergies (Optional)", placeholder="e.g., Fever spiked at night, allergic to penicillin...")
+
+                # Auto-recommend specialist based on age (< 16 -> Pediatrics) and primary symptom
+                if p_age < 16:
+                    recommended_doc = "Dr. pradip (Pediatrics)"
+                    if severity == "Severe":
+                        st.error(f"🚨 **Pediatric Priority Alert:** Since the patient is under 16 and has severe symptoms, we strongly recommend consulting **{recommended_doc}** immediately.")
+                    else:
+                        st.info(f"🧸 **Pediatric Routing:** Patients under 16 are automatically routed to **{recommended_doc}**.")
+                elif selected_symptoms:
+                    primary_symptom = selected_symptoms[0]
+                    recommended_doc = SYMPTOM_TO_DOCTOR_MAP.get(primary_symptom, SPECIALTY_DOCTORS[0])
+                    if severity == "Severe":
+                        st.error(f"🚨 **High Priority Triage:** Based on severe symptoms, we strongly recommend consulting **{recommended_doc}** immediately.")
+                    else:
+                        st.info(f"💡 **Recommended Specialist:** Based on your symptoms, we suggest booking with **{recommended_doc}**.")
+                else:
+                    recommended_doc = SPECIALTY_DOCTORS[0]
+                    st.caption("Enter patient age and select symptoms above to get an automatic specialist recommendation.")
+
+            st.markdown("---")
+
+            # STEP 2: APPOINTMENT BOOKING FORM
+            st.subheader("🗓️ Step 2: Confirm Appointment Details")
             with st.form("appointment_form", clear_on_submit=True):
-                patient_name = st.text_input("Full Patient Name", placeholder="e.g. Rahul Sharma")
-                p_age = st.number_input("Patient Age", min_value=0, max_value=120, value=25)
-                p_gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                col_n1, col_n2 = st.columns(2)
+                with col_n1:
+                    patient_name = st.text_input("Full Patient Name", placeholder="e.g. Rahul Sharma")
+                with col_n2:
+                    p_gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                
                 p_contact = st.text_input("Contact Number", placeholder="e.g. +91 98765 43210")
-                p_problem = st.text_area("Chief Medical Complaint", placeholder="Briefly describe symptoms...")
-                doctor_choice = st.selectbox("Select Department Specialist", SPECIALTY_DOCTORS)
+                
+                default_doc_index = SPECIALTY_DOCTORS.index(recommended_doc) if recommended_doc in SPECIALTY_DOCTORS else 0
+                doctor_choice = st.selectbox("Assigned Department Specialist", SPECIALTY_DOCTORS, index=default_doc_index)
+                
                 col_date, col_time = st.columns(2)
                 with col_date:
                     appointment_date = st.date_input("Select Appointment Date", min_value=datetime.today().date())
                 with col_time:
                     appointment_time = st.selectbox("Select Available Time Slot", ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM"])
+                
                 submit_button = st.form_submit_button("Confirm Appointment Slot", type="primary")
                 
                 if submit_button:
                     if patient_name.strip() == "":
                         st.error("Please enter a valid patient name.")
+                    elif not selected_symptoms:
+                        st.warning("Please complete Step 1 by selecting at least one symptom before booking.")
                     else:
+                        triage_summary = (
+                            f"[Severity: {severity} | Duration: {duration} | Age: {p_age}] "
+                            f"Symptoms: {', '.join(selected_symptoms)}. "
+                            f"Notes: {additional_details if additional_details else 'None'}"
+                        )
+                        
                         conn = sqlite3.connect("hospital_v2.db")
                         cursor = conn.cursor()
                         cursor.execute(
                             "INSERT INTO appointments (patient_name, patient_age, patient_gender, patient_contact, patient_problem, doctor, appt_date, appt_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            (patient_name, p_age, p_gender, p_contact, p_problem, doctor_choice, str(appointment_date), appointment_time, "Pending")
+                            (patient_name, p_age, p_gender, p_contact, triage_summary, doctor_choice, str(appointment_date), appointment_time, "Pending")
                         )
                         conn.commit()
                         conn.close()
-                        st.success(f"🎉 Appointment requested with {doctor_choice} on {appointment_date} at {appointment_time}.")
+                        st.success(f"🎉 Appointment booked with **{doctor_choice}** on {appointment_date} at {appointment_time}! Your symptom report has been sent to the doctor.")
                         st.rerun()
 
         with col_right:
@@ -440,7 +503,7 @@ else:
         selected_dept = st.selectbox("Filter Schedule by Specialist / Department:", ["All Departments"] + SPECIALTY_DOCTORS)
         
         conn = sqlite3.connect("hospital_v2.db")
-        df = pd.read_sql_query("SELECT id AS ID, patient_name AS [Patient Name], doctor AS Doctor, appt_date AS [Date], appt_time AS [Slot], status AS Status FROM appointments", conn)
+        df = pd.read_sql_query("SELECT id AS ID, patient_name AS [Patient Name], patient_age AS [Age], doctor AS Doctor, patient_problem AS [Triage Report], appt_date AS [Date], appt_time AS [Slot], status AS Status FROM appointments", conn)
         conn.close()
         
         if selected_dept != "All Departments":
@@ -454,7 +517,7 @@ else:
                 edited_df = st.data_editor(
                     df,
                     column_config={"Status": st.column_config.SelectboxColumn("Appointment Status", options=["Pending", "Confirmed", "Completed", "Cancelled"], required=True)},
-                    disabled=["ID", "Patient Name", "Doctor", "Date", "Slot"],
+                    disabled=["ID", "Patient Name", "Age", "Doctor", "Triage Report", "Date", "Slot"],
                     use_container_width=True,
                     key="doctor_grid",
                     hide_index=True
@@ -477,12 +540,15 @@ else:
                 
                 conn = sqlite3.connect("hospital_v2.db")
                 cursor = conn.cursor()
-                patient_info = cursor.execute("SELECT patient_age, doctor FROM appointments WHERE patient_name = ? LIMIT 1", (selected_patient,)).fetchone()
+                patient_info = cursor.execute("SELECT patient_age, doctor, patient_problem FROM appointments WHERE patient_name = ? ORDER BY id DESC LIMIT 1", (selected_patient,)).fetchone()
                 p_age_val = patient_info[0] if (patient_info and patient_info[0] is not None) else 25
                 assigned_doc = patient_info[1] if (patient_info and patient_info[1]) else selected_dept
+                triage_note = patient_info[2] if (patient_info and patient_info[2]) else "No pre-appointment triage recorded."
                 
                 history_df = pd.read_sql_query("SELECT consultation_date AS [Date], symptoms AS [Symptoms], diagnosed_disease AS [Diagnosis], prescription AS [Prescription Summary], notes AS [Doctor Notes] FROM consultations WHERE patient_name = ?", conn, params=(selected_patient,))
                 conn.close()
+
+                st.info(f"📋 **Pre-Appointment Symptom Enquiry Report (Age: {p_age_val}):** {triage_note}")
               
                 st.markdown("##### 📜 Previous E-Health Consultation Logs")
                 if not history_df.empty:
