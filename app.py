@@ -700,7 +700,6 @@ else:
                         st.error("❌ Verification Failed: Patient name and contact number do not match our records. (Tip: Use '0000' if booked before phone tracking was added.)")
 ### Block 7 — Section 5B: Page 2 (Doctor Dashboard with Medicine Cost Logging & Past PDF Downloads)
 
-```python
     # --- PAGE 2: DOCTOR DASHBOARD ---
     elif user_role == "Doctor Dashboard":
         render_hero("🩺 Medical Practitioner Workspace", "Manage daily patient schedules, review E-health logs, and issue digital prescriptions.")
