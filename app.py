@@ -599,8 +599,7 @@ else:
                 p_contact = st.text_input("Registered Contact Number (Used to unlock your Rx later)", placeholder="e.g. 9876543210")
                 
                 submit_button = st.form_submit_button("Confirm Appointment Slot", type="primary")
-                
-                if submit_button:
+                 if submit_button:
                     if patient_name.strip() == "":
                         st.error("Please enter a valid patient name.")
                     elif p_contact.strip() == "":
@@ -648,56 +647,57 @@ else:
                 if verify_name.strip() and verify_contact.strip():
                     conn = sqlite3.connect("hospital_v2.db")
                     appt_check = pd.read_sql_query(
-"SELECT patient_contact FROM appointments WHERE LOWER(TRIM(patient_name)) = LOWER(TRIM(?))",
-conn,
-params=(verify_name,)
-)
-clean_input_digits = "".join(ch for ch in verify_contact if ch.isdigit())
-registered_digits = {
-"".join(ch for ch in str(c) if ch.isdigit())
-for c in appt_check["patient_contact"].dropna().tolist()
-}
-# Allow '0000' fallback for older records created without a contact number
-is_verified = (clean_input_digits in registered_digits and clean_input_digits != "") or (
-not appt_check.empty and registered_digits == {""} and verify_contact.strip() == "0000"
-)
-if is_verified:
-rx_df = pd.read_sql_query(
-"SELECT id, patient_name, doctor, symptoms, diagnosed_disease, prescription, notes, consultation_date FROM consultations WHERE LOWER(TRIM(patient_name)) = LOWER(TRIM(?)) ORDER BY id DESC",
-conn,
-params=(verify_name,)
-)
-conn.close()
-if not rx_df.empty:
-st.success(f"🔓 Identity Verified! Found {len(rx_df)} prescription record(s):")
-for rec in rx_df.to_dict("records"):
-with st.container(border=True):
-st.markdown(f"🗓️ Visit Date: {rec['consultation_date']} | 🩺 Doctor: {rec['doctor']}")
-st.markdown(f"Diagnosis: {rec['diagnosed_disease']} (Symptoms: {rec['symptoms']})")
-st.info(f"💊 Prescription: {rec['prescription']}")
-st.caption(f"📝 Doctor Notes: {rec['notes'] if rec['notes'] else 'No additional notes.'}")
-pdf_data = build_prescription_pdf(
-rec["patient_name"],
-rec["doctor"],
-rec["diagnosed_disease"],
-rec["symptoms"],
-rec["prescription"],
-rec["notes"]
-)
-st.download_button(
-label="📥 Download Prescription & Notes (PDF)",
-data=pdf_data,
-file_name=f"Prescription_{rec['patient_name'].replace(' ', '')}{rec['id']}.pdf",
-mime="application/pdf",
-key=f"patient_dl_rx_{rec['id']}"
-)
-else:
-st.info("Identity verified, but your doctor has not finalized a prescription yet.")
-else:
-conn.close()
-st.error("❌ Verification Failed: Patient name and contact number do not match our records. (Tip: Use '0000' if booked before phone tracking was added.)")
---
+                        "SELECT patient_contact FROM appointments WHERE LOWER(TRIM(patient_name)) = LOWER(TRIM(?))",
+                        conn,
+                        params=(verify_name,)
+                    )
+                    clean_input_digits = "".join(ch for ch in verify_contact if ch.isdigit())
+                    registered_digits = {
+                        "".join(ch for ch in str(c) if ch.isdigit())
+                        for c in appt_check["patient_contact"].dropna().tolist()
+                    }
+                    # Allow '0000' fallback for older records created without a contact number
+                    is_verified = (clean_input_digits in registered_digits and clean_input_digits != "") or (
+                        not appt_check.empty and registered_digits == {""} and verify_contact.strip() == "0000"
+                    )
 
+                    if is_verified:
+                        rx_df = pd.read_sql_query(
+                            "SELECT id, patient_name, doctor, symptoms, diagnosed_disease, prescription, notes, consultation_date FROM consultations WHERE LOWER(TRIM(patient_name)) = LOWER(TRIM(?)) ORDER BY id DESC",
+                            conn,
+                            params=(verify_name,)
+                        )
+                        conn.close()
+
+                        if not rx_df.empty:
+                            st.success(f"🔓 Identity Verified! Found {len(rx_df)} prescription record(s):")
+                            for rec in rx_df.to_dict("records"):
+                                with st.container(border=True):
+                                    st.markdown(f"**🗓️ Visit Date:** {rec['consultation_date']} | **🩺 Doctor:** {rec['doctor']}")
+                                    st.markdown(f"**Diagnosis:** {rec['diagnosed_disease']} *(Symptoms: {rec['symptoms']})*")
+                                    st.info(f"💊 **Prescription:** {rec['prescription']}")
+                                    st.caption(f"📝 **Doctor Notes:** {rec['notes'] if rec['notes'] else 'No additional notes.'}")
+
+                                    pdf_data = build_prescription_pdf(
+                                        rec["patient_name"],
+                                        rec["doctor"],
+                                        rec["diagnosed_disease"],
+                                        rec["symptoms"],
+                                        rec["prescription"],
+                                        rec["notes"]
+                                    )
+                                    st.download_button(
+                                        label="📥 Download Prescription & Notes (PDF)",
+                                        data=pdf_data,
+                                        file_name=f"Prescription_{rec['patient_name'].replace(' ', '_')}_{rec['id']}.pdf",
+                                        mime="application/pdf",
+                                        key=f"patient_dl_rx_{rec['id']}"
+                                    )
+                        else:
+                            st.info("Identity verified, but your doctor has not finalized a prescription yet.")
+                    else:
+                        conn.close()
+                        st.error("❌ Verification Failed: Patient name and contact number do not match our records. (Tip: Use '0000' if booked before phone tracking was added.)")
 ### Block 7 — Section 5B: Page 2 (Doctor Dashboard with Medicine Cost Logging & Past PDF Downloads)
 
 ```python
