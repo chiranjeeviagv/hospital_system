@@ -818,9 +818,14 @@ else:
 
                     target_medicine = DISEASE_TO_MEDICINE_MAP.get(chosen_disease, "None")
                     med_price = 0.0
-                    if target_medicine != "None":
+                   if target_medicine != "None":
                         price_row = cursor.execute("SELECT unit_price FROM inventory WHERE medicine_name = ?", (target_medicine,)).fetchone()
-                        med_price = float(price_row) if price_row else 150.0
+                        if price_row:
+                            (raw_price,) = price_row
+                            med_price = float(raw_price) if raw_price is not None else 150.0
+                        else:
+                            med_price = 150.0
+
                         cursor.execute("UPDATE inventory SET stock_qty = MAX(0, stock_qty - 1) WHERE medicine_name = ?", (target_medicine,))
                     
                     cursor.execute(
@@ -915,8 +920,14 @@ else:
                 ).fetchone()
                 conn.close()
 
-                dispensed_med_name = med_row if (med_row and med_row) else "No Medication Dispensed"
-                med_fee = float(med_row) if (med_row and med_row is not None) else 0.0
+                if med_row:
+                    raw_med_name, raw_med_cost = med_row
+                    dispensed_med_name = raw_med_name if raw_med_name else "No Medication Dispensed"
+                    med_fee = float(raw_med_cost) if raw_med_cost is not None else 0.0
+                else:
+                    dispensed_med_name = "No Medication Dispensed"
+                    med_fee = 0.0
+
                 
                 base_fee = DOCTOR_FEE_SCHEDULE.get(chosen_doctor, 500.00)
                 subtotal = base_fee + med_fee
