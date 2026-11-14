@@ -599,7 +599,7 @@ else:
                 p_contact = st.text_input("Registered Contact Number (Used to unlock your Rx later)", placeholder="e.g. 9876543210")
                 
                 submit_button = st.form_submit_button("Confirm Appointment Slot", type="primary")
-                 if submit_button:
+                if submit_button:
                     if patient_name.strip() == "":
                         st.error("Please enter a valid patient name.")
                     elif p_contact.strip() == "":
@@ -615,17 +615,17 @@ else:
                             f"Notes: {additional_details if additional_details else 'None'}"
                         )
                         
-                        conn = sqlite3.connect("hospital_v2.db")
-                        cursor = conn.cursor()
-                        cursor.execute(
+                    conn = sqlite3.connect("hospital_v2.db")
+                    cursor = conn.cursor()
+                    cursor.execute(
                             "INSERT INTO appointments (patient_name, patient_age, patient_gender, patient_contact, patient_problem, doctor, appt_date, appt_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                             (patient_name.strip(), p_age, p_gender, p_contact.strip(), triage_summary, doctor_choice, str(appointment_date), appointment_time, "Pending")
                         )
-                        conn.commit()
-                        conn.close()
-                        st.session_state["selected_specialty_doc"] = None
-                        st.success(f"🎉 Appointment booked with **{doctor_choice}** on {appointment_date} at {appointment_time}! Your symptom report has been sent to the doctor.")
-                        st.rerun()
+                    conn.commit()
+                    conn.close()
+                    st.session_state["selected_specialty_doc"] = None
+                    st.success(f"🎉 Appointment booked with **{doctor_choice}** on {appointment_date} at {appointment_time}! Your symptom report has been sent to the doctor.")
+                    st.rerun()
 
         with col_right:
             tab_req, tab_rx = st.tabs(["📋 Active Requests", "📄 Download Prescriptions & Notes"])
