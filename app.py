@@ -563,7 +563,7 @@ else:
 
             st.markdown("---")
 
-            # STEP 2: APPOINTMENT BOOKING FORM (WITH DOUBLE-BOOKING PREVENTION)
+                        # STEP 2: APPOINTMENT BOOKING FORM (WITH DOUBLE-BOOKING PREVENTION)
             st.subheader("🗓️ Step 2: Confirm Appointment Details")
             default_doc_index = SPECIALTY_DOCTORS.index(recommended_doc) if recommended_doc in SPECIALTY_DOCTORS else 0
             doctor_choice = st.selectbox("Assigned Department Specialist", SPECIALTY_DOCTORS, index=default_doc_index)
@@ -615,17 +615,17 @@ else:
                             f"Notes: {additional_details if additional_details else 'None'}"
                         )
                         
-                    conn = sqlite3.connect("hospital_v2.db")
-                    cursor = conn.cursor()
-                    cursor.execute(
+                        conn = sqlite3.connect("hospital_v2.db")
+                        cursor = conn.cursor()
+                        cursor.execute(
                             "INSERT INTO appointments (patient_name, patient_age, patient_gender, patient_contact, patient_problem, doctor, appt_date, appt_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                             (patient_name.strip(), p_age, p_gender, p_contact.strip(), triage_summary, doctor_choice, str(appointment_date), appointment_time, "Pending")
                         )
-                    conn.commit()
-                    conn.close()
-                    st.session_state["selected_specialty_doc"] = None
-                    st.success(f"🎉 Appointment booked with **{doctor_choice}** on {appointment_date} at {appointment_time}! Your symptom report has been sent to the doctor.")
-                    st.rerun()
+                        conn.commit()
+                        conn.close()
+                        st.session_state["selected_specialty_doc"] = None
+                        st.success(f"🎉 Appointment booked with **{doctor_choice}** on {appointment_date} at {appointment_time}! Your symptom report has been sent to the doctor.")
+                        st.rerun()
 
         with col_right:
             tab_req, tab_rx = st.tabs(["📋 Active Requests", "📄 Download Prescriptions & Notes"])
@@ -698,7 +698,6 @@ else:
                     else:
                         conn.close()
                         st.error("❌ Verification Failed: Patient name and contact number do not match our records. (Tip: Use '0000' if booked before phone tracking was added.)")
-### Block 7 — Section 5B: Page 2 (Doctor Dashboard with Medicine Cost Logging & Past PDF Downloads)
 
     # --- PAGE 2: DOCTOR DASHBOARD ---
     elif user_role == "Doctor Dashboard":
