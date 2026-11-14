@@ -224,7 +224,7 @@ def init_db():
     ''')
 
     cursor.execute("PRAGMA table_info(appointments)")
-    columns = [info for info in cursor.fetchall()]
+    columns = [info[1] for info in cursor.fetchall()]
     if "appt_date" not in columns:
         cursor.execute("ALTER TABLE appointments ADD COLUMN appt_date TEXT NOT NULL DEFAULT ''")
     if "appt_time" not in columns:
@@ -267,7 +267,7 @@ def init_db():
     ''')
     
     cursor.execute("SELECT COUNT(*) FROM appointments")
-    if cursor.fetchone() == 0:
+    if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT INTO appointments (patient_name, patient_age, patient_problem, doctor, appt_date, appt_time, status) VALUES ('Rama', 34, '[Severity: Moderate | Duration: 1 - 3 days | Age: 34] Symptoms: Earache, Sinus Congestion & Sore Throat.', 'Dr. Rao (ENT)', '2026-11-15', '10:00 AM', 'Confirmed')")
         cursor.execute("INSERT INTO appointments (patient_name, patient_age, patient_problem, doctor, appt_date, appt_time, status) VALUES ('Priya Patel', 10, '[Severity: Mild | Duration: Less than 24 hours | Age: 10] Symptoms: High Fever & Chills.', 'Dr. Pradip (Pediatrics)', '2026-11-15', '02:30 PM', 'Pending')")
 
@@ -488,14 +488,14 @@ else:
                     recommended_doc = st.session_state["selected_specialty_doc"]
                     st.success(f"✅ **Selected Department:** You chose **{recommended_doc}** from the specialties menu above.")
                 elif selected_symptoms:
-                    primary_symptom = selected_symptoms
-                    recommended_doc = SYMPTOM_TO_DOCTOR_MAP.get(primary_symptom, SPECIALTY_DOCTORS)
+                    primary_symptom = selected_symptoms[0]
+                    recommended_doc = SYMPTOM_TO_DOCTOR_MAP.get(primary_symptom, SPECIALTY_DOCTORS[0])
                     if severity == "Severe":
                         st.error(f"🚨 **High Priority Triage:** Based on severe symptoms, we strongly recommend consulting **{recommended_doc}** immediately.")
                     else:
                         st.info(f"💡 **Recommended Specialist:** Based on your symptoms, we suggest booking with **{recommended_doc}**.")
                 else:
-                    recommended_doc = SPECIALTY_DOCTORS
+                    recommended_doc = SPECIALTY_DOCTORS[0]
                     st.caption("Click a specialty card above or select symptoms to auto-assign your doctor.")
 
             st.markdown("---")
@@ -597,9 +597,9 @@ else:
                 conn = sqlite3.connect("hospital_v2.db")
                 cursor = conn.cursor()
                 patient_info = cursor.execute("SELECT patient_age, doctor, patient_problem FROM appointments WHERE patient_name = ? ORDER BY id DESC LIMIT 1", (selected_patient,)).fetchone()
-                p_age_val = patient_info if (patient_info and patient_info is not None) else 25
-                assigned_doc = patient_info if (patient_info and patient_info) else selected_dept
-                triage_note = patient_info if (patient_info and patient_info) else "No pre-appointment triage recorded."
+                p_age_val = patient_info[0] if (patient_info and patient_info[0] is not None) else 25
+                assigned_doc = patient_info[1] if (patient_info and patient_info[1]) else selected_dept
+                triage_note = patient_info[2] if (patient_info and patient_info[2]) else "No pre-appointment triage recorded."
                 
                 history_df = pd.read_sql_query("SELECT consultation_date AS [Date], symptoms AS [Symptoms], diagnosed_disease AS [Diagnosis], prescription AS [Prescription Summary], notes AS [Doctor Notes] FROM consultations WHERE patient_name = ?", conn, params=(selected_patient,))
                 conn.close()
@@ -726,6 +726,7 @@ else:
             conn.close()
             st.success("Pharmacy inventory tracking log changes successfully committed!")
             st.rerun()
+
     # --- PAGE 4: BILLING DASHBOARD ---
     elif user_role == "Billing Dashboard":
         render_hero("💰 Patient Checkouts & Invoice Generator", "Process completed consultations, calculate GST, and generate downloadable PDF receipts.")
@@ -748,8 +749,8 @@ else:
                 unbilled_df["display_select"] = unbilled_df["patient_name"] + " — " + unbilled_df["doctor"]
                 selected_record = st.selectbox("Select Pending Patient:", unbilled_df["display_select"].tolist())
                 
-                chosen_patient = selected_record.split(" — ")
-                chosen_doctor = selected_record.split(" — ")
+                chosen_patient = selected_record.split(" — ")[0]
+                chosen_doctor = selected_record.split(" — ")[1]
                 
                 base_fee = DOCTOR_FEE_SCHEDULE.get(chosen_doctor, 500.00)
                 tax_calc = round(base_fee * 0.18, 2)
@@ -804,6 +805,7 @@ else:
                 st.dataframe(billing_history_df, use_container_width=True, hide_index=True)
             else:
                 st.caption("No invoices issued yet today.")
+
     # --- PAGE 5: ADMIN ANALYTICS ---
     elif user_role == "Admin Analytics":
         render_hero("📊 Hospital Operational Control Panel", "Real-time clinical metrics, booking pipeline status, and disease incidence analytics.")
